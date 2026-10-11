@@ -14,5 +14,5 @@ window.SITE_CONFIG = {
   // tawk.to live chat — paste your widget IDs here as 'PROPERTY_ID/WIDGET_ID'
   // (tawk.to dashboard → Administration → Chat Widget → copy from the embed code URL: embed.tawk.to/XXXX/YYYY)
   // Leave empty '' to disable the chat widget.
-  tawkTo: '',
+  tawkTo: '6acc12385184fb34c4a616ed/1k4mieboo',
 };
