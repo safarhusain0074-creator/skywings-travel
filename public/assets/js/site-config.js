@@ -11,4 +11,8 @@ window.SITE_CONFIG = {
   email: 'info@skywings.example',   // PLACEHOLDER
   address: 'Main Boulevard, Gulberg, Lahore, Pakistan', // PLACEHOLDER
   hours: 'Mon–Sat, 9:00 AM – 8:00 PM (PKT)',
+  // tawk.to live chat — paste your widget IDs here as 'PROPERTY_ID/WIDGET_ID'
+  // (tawk.to dashboard → Administration → Chat Widget → copy from the embed code URL: embed.tawk.to/XXXX/YYYY)
+  // Leave empty '' to disable the chat widget.
+  tawkTo: '',
 };

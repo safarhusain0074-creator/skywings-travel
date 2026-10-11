@@ -68,6 +68,15 @@
         '</div></footer>' +
         '<a class="whatsapp-float" href="https://wa.me/' + C.whatsapp + '?text=' + encodeURIComponent('Assalam-o-Alaikum! I want to inquire about a booking.') + '" target="_blank" aria-label="Chat on WhatsApp">' + I.wa + '</a>' +
         '<div id="toast"></div>';
+      // tawk.to live chat widget (enabled when SITE_CONFIG.tawkTo is set)
+      if (C.tawkTo && !document.querySelector('script[src*="embed.tawk.to"]')) {
+        const tw = document.createElement('script');
+        tw.async = true;
+        tw.src = 'https://embed.tawk.to/' + C.tawkTo;
+        tw.charset = 'UTF-8';
+        tw.setAttribute('crossorigin', '*');
+        document.body.appendChild(tw);
+      }
     }
     document.title = (document.title ? document.title + ' | ' : '') + C.brandName;
   }
