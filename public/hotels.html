@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hotels</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+<script src="assets/js/site-config.js"></script>
+<script src="assets/js/app.js"></script>
+</head>
+<body>
+<div id="site-header"></div>
+
+<section class="hero" style="padding:44px 0">
+  <div class="container"><h1>Hotels</h1><p>Hand-picked partner hotels across Pakistan. Book online, pay manually.</p></div>
+</section>
+
+<div class="container" style="margin:30px auto 60px">
+  <div class="toolbar"><input id="q" placeholder="Search city or hotel..." style="max-width:320px"><button class="btn btn-primary" id="searchBtn">Search</button></div>
+  <div class="grid-3" id="grid"></div>
+</div>
+
+<div id="site-footer"></div>
+
+<script>
+SW.renderChrome('hotels.html');
+const qs = new URLSearchParams(location.search);
+if (qs.get('q')) document.getElementById('q').value = qs.get('q');
+async function load() {
+  const box = document.getElementById('grid');
+  SW.spinner(box);
+  try {
+    const { packages } = await SW.api('/api/packages?type=hotel');
+    const q = (document.getElementById('q').value || '').toLowerCase();
+    const list = packages.filter(p => !q || (p.title + ' ' + p.location + ' ' + p.description).toLowerCase().includes(q));
+    if (!list.length) { box.innerHTML = '<div class="empty" style="grid-column:1/-1">No hotels found.</div>'; return; }
+    box.innerHTML = list.map((p, i) =>
+      '<div class="card"><div class="card-visual" style="background:' + SW.gradient(i + 2) + '">' + SW.ICONS.bed +
+      '<span class="badge badge-hotel">HOTEL</span></div><div class="card-body"><h3>' + SW.esc(p.title) + '</h3>' +
+      '<div class="card-meta"><span>' + SW.ICONS.pin + ' ' + SW.esc(p.location || '') + '</span></div>' +
+      '<p style="font-size:.9rem;color:var(--muted)">' + SW.esc(p.description.slice(0, 110)) + '...</p>' +
+      '<div class="card-foot"><span class="price">' + SW.pkr(p.price_pkr) + ' <small>/ night</small></span>' +
+      '<a class="btn btn-primary btn-sm" href="tour-detail.html?id=' + p.id + '">Book</a></div></div></div>'
+    ).join('');
+  } catch { box.innerHTML = '<div class="empty" style="grid-column:1/-1">Could not load hotels.</div>'; }
+}
+document.getElementById('searchBtn').onclick = load;
+document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); load(); } });
+load();
+</script>
+</body>
+</html>

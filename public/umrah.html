@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Umrah Packages</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+<script src="assets/js/site-config.js"></script>
+<script src="assets/js/app.js"></script>
+</head>
+<body>
+<div id="site-header"></div>
+
+<section class="hero" style="padding:44px 0">
+  <div class="container"><h1>Umrah Packages</h1><p>Spiritually fulfilling journeys with hotels near Haram, guided ziyarat and full visa handling.</p></div>
+</section>
+
+<div class="container" style="margin:30px auto 60px">
+  <div class="grid-3" id="grid"></div>
+  <div class="form-card" style="margin-top:36px">
+    <h3>What's included in every Umrah package</h3>
+    <div class="grid-4" style="margin-top:14px">
+      <div><b>Flights</b><p class="form-hint">Return airfare from major Pakistani cities</p></div>
+      <div><b>Hotels</b><p class="form-hint">4-star hotels near Haram with shuttle</p></div>
+      <div><b>Visa</b><p class="form-hint">Complete Umrah visa processing</p></div>
+      <div><b>Ziyarat</b><p class="form-hint">Guided tours in Makkah & Madinah</p></div>
+    </div>
+  </div>
+</div>
+
+<div id="site-footer"></div>
+
+<script>
+SW.renderChrome('umrah.html');
+(async () => {
+  const box = document.getElementById('grid');
+  SW.spinner(box);
+  try {
+    const { packages } = await SW.api('/api/packages?type=umrah');
+    if (!packages.length) { box.innerHTML = '<div class="empty" style="grid-column:1/-1">No Umrah packages available right now. Please contact us on WhatsApp.</div>'; return; }
+    box.innerHTML = packages.map((p, i) =>
+      '<div class="card"><div class="card-visual" style="background:' + SW.gradient(i + 3) + '">' + SW.ICONS.moon +
+      '<span class="badge badge-umrah">UMRAH</span></div><div class="card-body"><h3>' + SW.esc(p.title) + '</h3>' +
+      '<div class="card-meta"><span>' + SW.ICONS.clock + ' ' + SW.esc(p.duration || '') + '</span><span>' + SW.ICONS.pin + ' ' + SW.esc(p.location || '') + '</span></div>' +
+      '<p style="font-size:.9rem;color:var(--muted)">' + SW.esc(p.description.slice(0, 110)) + '...</p>' +
+      '<div class="card-foot"><span class="price">' + SW.pkr(p.price_pkr) + ' <small>/ person</small></span>' +
+      '<a class="btn btn-primary btn-sm" href="tour-detail.html?id=' + p.id + '">Details</a></div></div></div>'
+    ).join('');
+  } catch { box.innerHTML = '<div class="empty" style="grid-column:1/-1">Could not load packages.</div>'; }
+})();
+</script>
+</body>
+</html>

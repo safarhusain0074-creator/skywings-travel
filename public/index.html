@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+<script src="assets/js/site-config.js"></script>
+<script src="assets/js/app.js"></script>
+</head>
+<body>
+<div id="site-header"></div>
+
+<section class="hero">
+  <div class="container">
+    <h1 id="heroTitle">Fly Further, Travel Smarter</h1>
+    <p>Book flights, hand-crafted tour packages, hotels, Umrah and visa services — all in one place, with easy manual payments via bank transfer, JazzCash or Easypaisa.</p>
+    <div class="hero-badges">
+      <span class="hero-badge" data-icon="shield">Licensed & Trusted Agency</span>
+      <span class="hero-badge" data-icon="card">Easy Manual Payments</span>
+      <span class="hero-badge" data-icon="chat">WhatsApp Support</span>
+    </div>
+  </div>
+</section>
+
+<div class="container">
+  <div class="search-card">
+    <div class="search-tabs">
+      <button class="search-tab active" data-tab="flights"><span data-icon="plane"></span>Flights</button>
+      <button class="search-tab" data-tab="tours"><span data-icon="pin"></span>Tours</button>
+      <button class="search-tab" data-tab="hotels"><span data-icon="bed"></span>Hotels</button>
+    </div>
+    <div class="search-body active" id="tab-flights">
+      <form id="flightSearchForm">
+        <div class="search-grid">
+          <div class="field"><label>From</label><input name="origin" placeholder="LHE" maxlength="3" required style="text-transform:uppercase"></div>
+          <div class="field"><label>To</label><input name="destination" placeholder="DXB" maxlength="3" required style="text-transform:uppercase"></div>
+          <div class="field"><label>Departure</label><input type="date" name="departure_date" required></div>
+          <div class="field"><label>Return (optional)</label><input type="date" name="return_date"></div>
+          <div class="field"><label>Passengers</label>
+            <select name="adults"><option value="1">1 Adult</option><option value="2">2 Adults</option><option value="3">3 Adults</option><option value="4">4 Adults</option></select>
+          </div>
+          <div class="field"><label>Cabin</label>
+            <select name="cabin"><option value="economy">Economy</option><option value="premium_economy">Premium Economy</option><option value="business">Business</option><option value="first">First</option></select>
+          </div>
+          <div class="search-actions"><button class="btn btn-primary btn-block" type="submit">Search Flights</button></div>
+        </div>
+      </form>
+    </div>
+    <div class="search-body" id="tab-tours">
+      <form action="tours.html" method="get">
+        <div class="search-grid">
+          <div class="field"><label>Destination</label><input name="q" placeholder="Canada, Malaysia, Dubai..."></div>
+          <div class="field"><label>Type</label><select name="type"><option value="tour">Tours</option><option value="umrah">Umrah</option></select></div>
+          <div class="search-actions"><button class="btn btn-primary btn-block" type="submit">Find Tours</button></div>
+        </div>
+      </form>
+    </div>
+    <div class="search-body" id="tab-hotels">
+      <form action="hotels.html" method="get">
+        <div class="search-grid">
+          <div class="field"><label>City</label><input name="q" placeholder="Islamabad, Lahore, Karachi..."></div>
+          <div class="search-actions"><button class="btn btn-primary btn-block" type="submit">Find Hotels</button></div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<section class="section">
+  <div class="container">
+    <h2>Popular Destinations</h2>
+    <p class="sub">From the skylines of Dubai to the falls of Niagara — explore our most loved international routes.</p>
+    <div class="grid-4" id="destGrid"></div>
+  </div>
+</section>
+
+<section class="section" style="background:#fff">
+  <div class="container">
+    <h2>Featured Packages</h2>
+    <p class="sub">Hand-picked tours and Umrah packages with transparent PKR pricing.</p>
+    <div class="grid-3" id="featGrid"></div>
+    <div style="text-align:center;margin-top:28px"><a href="tours.html" class="btn btn-outline">View All Packages</a></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <h2>Why Travel With Us</h2>
+    <p class="sub">We handle the details so you can enjoy the journey.</p>
+    <div class="why-grid">
+      <div class="why"><span data-icon="shield" data-color="#0e9f8a"></span><h3>Trusted Agency</h3><p style="font-size:.9rem;color:var(--muted)">Years of experience serving Pakistani travelers with honest pricing.</p></div>
+      <div class="why"><span data-icon="card" data-color="#0284c7"></span><h3>Easy Payments</h3><p style="font-size:.9rem;color:var(--muted)">Pay via bank transfer, JazzCash or Easypaisa — no card needed.</p></div>
+      <div class="why"><span data-icon="chat" data-color="#6d28d9"></span><h3>WhatsApp Support</h3><p style="font-size:.9rem;color:var(--muted)">Real humans on WhatsApp, before and during your trip.</p></div>
+      <div class="why"><span data-icon="check" data-color="#d97706"></span><h3>Best-Price Promise</h3><p style="font-size:.9rem;color:var(--muted)">Transparent fares with no hidden charges, ever.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="background:#fff">
+  <div class="container">
+    <h2>What Our Travelers Say</h2>
+    <p class="sub">100K+ happy clients since 2002. Real reviews from real travelers will appear here.</p>
+    <div class="grid-3">
+      <div class="testi">"Travelled with SkyWings recently? Share your experience and your review will be featured here."<b>— SkyWings Travel & Tours</b></div>
+      <div class="testi">"Your feedback helps fellow travelers choose with confidence. Send us your trip story."<b>— SkyWings Travel & Tours</b></div>
+      <div class="testi">"From visa approvals to unforgettable tours — our clients' stories are our best advertisement."<b>— SkyWings Travel & Tours</b></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="background:linear-gradient(120deg,#0b2c4d,#0e5f7e);color:#fff;text-align:center">
+  <div class="container">
+    <h2 style="color:#fff">Ready for your next journey?</h2>
+    <p style="opacity:.9;max-width:560px;margin:0 auto 24px">Search live flight fares, browse curated packages, and book in minutes with manual payment options.</p>
+    <a href="flights.html" class="btn btn-amber" style="margin-right:10px">Search Flights</a>
+    <a href="tours.html" class="btn btn-outline" style="border-color:#fff;color:#fff">Browse Tours</a>
+  </div>
+</section>
+
+<div id="site-footer"></div>
+
+<script>
+SW.renderChrome('index.html');
+document.getElementById('heroTitle').textContent = window.SITE_CONFIG.tagline;
+
+// icons inside hero badges / tabs / why cards
+document.querySelectorAll('[data-icon]').forEach(el => {
+  const svg = SW.ICONS[el.dataset.icon];
+  if (svg) { el.insertAdjacentHTML('afterbegin', svg); const s = el.querySelector('svg'); if (s && el.dataset.color) s.style.color = el.dataset.color; }
+});
+
+// tabs
+document.querySelectorAll('.search-tab').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('.search-tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.search-body').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('tab-' + t.dataset.tab).classList.add('active');
+  };
+});
+
+// flight search -> flights.html
+document.getElementById('flightSearchForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const q = new URLSearchParams();
+  ['origin','destination','departure_date','return_date','adults','cabin'].forEach(k => { const v = f.get(k); if (v) q.set(k, v); });
+  location.href = 'flights.html?' + q.toString();
+});
+
+// destinations
+const dests = [
+  ['Canada', 'Toronto & Vancouver', 0], ['Malaysia', 'KL & Langkawi', 1], ['Dubai', 'UAE', 2],
+  ['Makkah & Madinah', 'Saudi Arabia', 3], ['Azerbaijan', 'Baku & Gabala', 4],
+  ['Maldives', 'Indian Ocean', 5], ['Istanbul', 'Turkey', 1], ['Europe', 'Schengen Tours', 2],
+];
+document.getElementById('destGrid').innerHTML = dests.map((d, i) =>
+  '<a href="tours.html?q=' + encodeURIComponent(d[0].split(' ')[0]) + '" class="card"><div class="card-visual" style="background:' + SW.gradient(i) + '">' + SW.ICONS.pin +
+  '<div><div style="font-weight:800;font-size:1.15rem">' + d[0] + '</div><div style="opacity:.85;font-size:.85rem">' + d[1] + '</div></div></div></a>'
+).join('');
+
+// featured packages
+(async () => {
+  try {
+    const { packages } = await SW.api('/api/packages');
+    const feat = packages.filter(p => p.type !== 'hotel').slice(0, 3);
+    document.getElementById('featGrid').innerHTML = feat.map((p, i) => packageCard(p, i)).join('');
+  } catch { document.getElementById('featGrid').innerHTML = '<p class="empty">Could not load packages.</p>'; }
+})();
+
+function packageCard(p, i) {
+  return '<div class="card"><div class="card-visual" style="background:' + SW.gradient(i) + '">' + SW.ICONS.pin +
+    '<span class="badge badge-' + p.type + '">' + p.type.toUpperCase() + '</span></div>' +
+    '<div class="card-body"><h3>' + SW.esc(p.title) + '</h3>' +
+    '<div class="card-meta"><span>' + SW.ICONS.clock + ' ' + SW.esc(p.duration || '') + '</span><span>' + SW.ICONS.pin + ' ' + SW.esc(p.location || '') + '</span></div>' +
+    '<div class="card-foot"><span class="price">' + SW.pkr(p.price_pkr) + ' <small>/ person</small></span>' +
+    '<a class="btn btn-primary btn-sm" href="tour-detail.html?id=' + p.id + '">Details</a></div></div></div>';
+}
+</script>
+</body>
+</html>

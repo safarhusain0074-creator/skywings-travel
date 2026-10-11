@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Package Details</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+<script src="assets/js/site-config.js"></script>
+<script src="assets/js/app.js"></script>
+</head>
+<body>
+<div id="site-header"></div>
+
+<div class="container" style="margin:26px auto 60px">
+  <div id="content"></div>
+</div>
+
+<div id="site-footer"></div>
+
+<script>
+SW.renderChrome('tours.html');
+const id = new URLSearchParams(location.search).get('id');
+
+(async () => {
+  const box = document.getElementById('content');
+  SW.spinner(box);
+  try {
+    const { package: p } = await SW.api('/api/packages/' + id);
+    const backLink = p.type === 'umrah' ? 'umrah.html' : (p.type === 'hotel' ? 'hotels.html' : 'tours.html');
+    box.innerHTML =
+      '<a href="' + backLink + '" style="font-size:.9rem">&larr; Back</a>' +
+      '<div class="two-col" style="margin-top:14px"><div>' +
+      '<div class="card"><div class="card-visual" style="height:260px;background:' + SW.gradient(p.id) + '">' + SW.ICONS.pin +
+      '<div><span class="badge badge-' + p.type + '">' + p.type.toUpperCase() + '</span>' +
+      '<h1 style="color:#fff;margin-top:8px">' + SW.esc(p.title) + '</h1></div></div>' +
+      '<div class="card-body">' +
+      '<div class="card-meta"><span>' + SW.ICONS.clock + ' ' + SW.esc(p.duration || '') + '</span><span>' + SW.ICONS.pin + ' ' + SW.esc(p.location || '') + '</span></div>' +
+      '<p>' + SW.esc(p.description).replace(/\n/g, '<br>') + '</p>' +
+      (p.itinerary ? '<h3 style="margin-top:14px">Itinerary</h3><p style="white-space:pre-line;font-size:.93rem">' + SW.esc(p.itinerary) + '</p>' : '') +
+      '</div></div></div>' +
+      '<div><div class="form-card" style="position:sticky;top:84px">' +
+      '<div class="price" style="font-size:1.8rem">' + SW.pkr(p.price_pkr) + '</div><p class="form-hint">per person</p>' +
+      '<form id="bookForm" style="margin-top:16px">' +
+      '<div class="form-group"><label>Travel date *</label><input type="date" name="travel_date" required></div>' +
+      '<div class="form-group"><label>Travelers *</label><select name="travelers"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>8</option><option>10</option></select></div>' +
+      '<div class="form-group"><label>Your name *</label><input name="name" required></div>' +
+      '<div class="form-group"><label>Phone / WhatsApp *</label><input name="phone" required></div>' +
+      '<div class="form-group"><label>Notes (optional)</label><textarea name="notes" rows="2"></textarea></div>' +
+      '<button class="btn btn-primary btn-block" type="submit" id="bookBtn">Book This Package</button></form>' +
+      '<p class="form-hint" style="margin-top:10px">You will pay manually on the next step (bank / JazzCash / Easypaisa).</p>' +
+      '</div></div></div>';
+
+    document.getElementById('bookForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      if (!SW.requireLogin()) return;
+      const f = new FormData(e.target);
+      const travelers = parseInt(f.get('travelers'));
+      const btn = document.getElementById('bookBtn');
+      btn.disabled = true; btn.textContent = 'Booking...';
+      try {
+        const { booking } = await SW.api('/api/bookings', { method: 'POST', body: {
+          type: p.type === 'hotel' ? 'hotel' : p.type,
+          package_id: p.id, title: p.title,
+          passengers: [{ title: 'mr', given_name: f.get('name'), family_name: '', born_on: '1990-01-01' }],
+          contact: { email: SW.getUser().email, phone: f.get('phone'), notes: f.get('notes') },
+          travel_date: f.get('travel_date'), travelers,
+        }});
+        location.href = 'payment.html?ref=' + booking.ref;
+      } catch (err) { SW.toast(err.message); btn.disabled = false; btn.textContent = 'Book This Package'; }
+    });
+  } catch { box.innerHTML = '<div class="alert alert-error">Package not found.</div>'; }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Search Flights</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+<script src="assets/js/site-config.js"></script>
+<script src="assets/js/app.js"></script>
+</head>
+<body>
+<div id="site-header"></div>
+
+<section class="hero" style="padding:44px 0">
+  <div class="container"><h1>Search Flights</h1><p>Live fares from hundreds of airlines. Book now, pay manually via bank, JazzCash or Easypaisa.</p></div>
+</section>
+
+<div class="container" style="margin-top:26px">
+  <div class="form-card">
+    <form id="searchForm">
+      <div class="search-grid">
+        <div class="field"><label>From (airport code)</label><input name="origin" id="fOrigin" maxlength="3" placeholder="LHE" required style="text-transform:uppercase"></div>
+        <div class="field"><label>To (airport code)</label><input name="destination" id="fDest" maxlength="3" placeholder="DXB" required style="text-transform:uppercase"></div>
+        <div class="field"><label>Departure</label><input type="date" name="departure_date" id="fDate" required></div>
+        <div class="field"><label>Return (optional)</label><input type="date" name="return_date" id="fRet"></div>
+        <div class="field"><label>Adults</label><select name="adults" id="fAdults"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></div>
+        <div class="field"><label>Children (2–11)</label><select name="children" id="fChild"><option value="0">0</option><option>1</option><option>2</option><option>3</option></select></div>
+        <div class="field"><label>Cabin</label><select name="cabin" id="fCabin"><option value="economy">Economy</option><option value="premium_economy">Premium Economy</option><option value="business">Business</option><option value="first">First</option></select></div>
+        <div class="search-actions"><button class="btn btn-primary btn-block" type="submit" id="searchBtn">Search Flights</button></div>
+      </div>
+    </form>
+  </div>
+
+  <div id="results" style="margin:26px 0 60px"></div>
+</div>
+
+<div id="site-footer"></div>
+
+<script>
+SW.renderChrome('flights.html');
+const q = new URLSearchParams(location.search);
+['origin','destination','departure_date','return_date','adults','children','cabin'].forEach(k => {
+  const v = q.get(k); if (!v) return;
+  const el = { origin:'fOrigin',destination:'fDest',departure_date:'fDate',return_date:'fRet',adults:'fAdults',children:'fChild',cabin:'fCabin' }[k];
+  if (el) document.getElementById(el).value = v;
+});
+const today = new Date().toISOString().slice(0,10);
+document.getElementById('fDate').min = today;
+document.getElementById('fRet').min = today;
+
+document.getElementById('searchForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const body = {
+    origin: (f.get('origin')||'').toUpperCase().trim(),
+    destination: (f.get('destination')||'').toUpperCase().trim(),
+    departure_date: f.get('departure_date'),
+    return_date: f.get('return_date') || undefined,
+    adults: parseInt(f.get('adults'))||1,
+    children: parseInt(f.get('children'))||0,
+    cabin: f.get('cabin'),
+  };
+  const box = document.getElementById('results');
+  const btn = document.getElementById('searchBtn');
+  btn.disabled = true; SW.spinner(box);
+  try {
+    const { offers } = await SW.api('/api/flights/search', { method:'POST', body });
+    if (!offers.length) { box.innerHTML = '<div class="empty">No flights found for this route and date. Try nearby dates.</div>'; return; }
+    box.innerHTML = '<p style="margin-bottom:14px;color:var(--muted)">' + offers.length + ' options found — prices are live and may change until ticketed.</p>' +
+      offers.map(o => flightCard(o)).join('');
+    box.querySelectorAll('[data-book]').forEach(b => b.onclick = () => {
+      const offer = offers.find(x => x.id === b.dataset.book);
+      sessionStorage.setItem('sw_offer', JSON.stringify(offer));
+      if (!SW.getToken()) { location.href = 'login.html?next=' + encodeURIComponent('flight-booking.html'); return; }
+      location.href = 'flight-booking.html';
+    });
+  } catch (err) {
+    box.innerHTML = '<div class="alert alert-error">' + SW.esc(err.message) + '</div>';
+  } finally { btn.disabled = false; }
+});
+
+function flightCard(o) {
+  const s0 = o.slices[0];
+  const segs = s0.segments.map(sg =>
+    '<div style="font-size:.82rem;color:var(--muted)">' + SW.esc(sg.airline + ' ' + sg.flight_no) + ' · ' +
+    sg.origin + ' ' + SW.fmtTime(sg.departure) + ' → ' + sg.destination + ' ' + SW.fmtTime(sg.arrival) + '</div>'
+  ).join('');
+  const ret = o.slices[1] ? '<div style="margin-top:6px;font-size:.85rem"><b>Return:</b> ' + o.slices[1].origin + ' → ' + o.slices[1].destination + ' · ' + SW.fmtDate(o.slices[1].departure) + '</div>' : '';
+  return '<div class="flight-card"><div>' +
+    '<div style="font-weight:800">' + SW.esc(o.airline_name || o.airline || 'Multiple airlines') + '</div>' +
+    '<div class="flight-route"><div><div class="flight-airport">' + s0.origin + '</div><div class="flight-time">' + SW.fmtTime(s0.departure) + '</div></div>' +
+    '<div style="flex:1"><div class="flight-line"></div><div class="flight-stops">' + (s0.stops === 0 ? 'Non-stop' : s0.stops + ' stop' + (s0.stops>1?'s':'')) + ' · ' + SW.dur(s0.duration) + '</div></div>' +
+    '<div style="text-align:right"><div class="flight-airport">' + s0.destination + '</div><div class="flight-time">' + SW.fmtTime(s0.arrival) + '</div></div></div>' +
+    segs + ret + '</div>' +
+    '<div class="flight-price"><div><div class="amount">' + SW.money(o.total_amount, o.total_currency) + '</div>' +
+    '<div style="font-size:.8rem;color:var(--muted)">total for all travelers</div></div>' +
+    '<button class="btn btn-primary" data-book="' + o.id + '">Book Now</button></div></div>';
+}
+
+// auto-search if query params present (from homepage)
+if (q.get('origin') && q.get('destination') && q.get('departure_date')) {
+  document.getElementById('searchForm').dispatchEvent(new Event('submit'));
+}
+</script>
+</body>
+</html>

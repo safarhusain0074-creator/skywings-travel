@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual Payment</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+<script src="assets/js/site-config.js"></script>
+<script src="assets/js/app.js"></script>
+</head>
+<body>
+<div id="site-header"></div>
+
+<div class="container" style="margin-top:26px;margin-bottom:60px">
+  <div class="steps">
+    <div class="step done"><span class="n">1</span><br>Booking Created</div>
+    <div class="step active"><span class="n">2</span><br>Manual Payment</div>
+    <div class="step"><span class="n">3</span><br>Admin Confirms</div>
+    <div class="step"><span class="n">4</span><br>Ticket Issued</div>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="form-card" style="margin-bottom:18px">
+        <h2 style="margin-bottom:14px">How to pay</h2>
+        <div class="alert alert-info">We do <b>not</b> take online card payments. Transfer the amount using any method below, then submit your transaction reference + receipt screenshot on this page. Our team confirms payments within office hours.</div>
+        <div id="methodsBox"></div>
+      </div>
+      <div class="form-card">
+        <h3 style="margin-bottom:14px">Submit Payment Proof</h3>
+        <form id="proofForm">
+          <div class="form-group"><label>Payment method used *</label><select name="method" id="methodSelect" required></select></div>
+          <div class="form-group"><label>Transaction reference (TID / TRX ID / receipt no.) *</label><input name="reference" required placeholder="e.g. 34567890123"></div>
+          <div class="form-group"><label>Receipt screenshot * (JPG/PNG, max 5MB)</label><input type="file" name="proof" accept="image/*" required></div>
+          <button class="btn btn-primary btn-block" type="submit" id="proofBtn">Submit Payment Proof</button>
+        </form>
+      </div>
+    </div>
+    <div>
+      <div class="form-card" style="position:sticky;top:84px">
+        <h3>Booking Summary</h3>
+        <div id="bookingBox"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="site-footer"></div>
+
+<script>
+if (!SW.requireLogin()) throw new Error('redirect');
+SW.renderChrome('payment.html');
+const ref = new URLSearchParams(location.search).get('ref');
+if (!ref) { location.href = 'my-bookings.html'; throw new Error('no ref'); }
+
+function copyTxt(t, btn) {
+  navigator.clipboard.writeText(t).then(() => { const o = btn.textContent; btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = o, 1500); });
+}
+
+(async () => {
+  const { bookings } = await SW.api('/api/bookings/mine');
+  const b = bookings.find(x => x.ref === ref);
+  if (!b) { document.getElementById('bookingBox').innerHTML = '<div class="alert alert-error">Booking not found.</div>'; return; }
+  document.getElementById('bookingBox').innerHTML =
+    '<div style="font-size:.85rem;color:var(--muted)">Booking Ref</div>' +
+    '<div style="font-weight:800;font-size:1.3rem;letter-spacing:1px">' + SW.esc(b.ref) + '</div>' +
+    '<div style="margin:10px 0">' + SW.statusBadge(b.status) + '</div>' +
+    '<p><b>' + SW.esc(b.title) + '</b></p>' +
+    (b.travel_date ? '<p style="font-size:.9rem">Travel date: ' + SW.fmtDate(b.travel_date) + '</p>' : '') +
+    (b.travelers ? '<p style="font-size:.9rem">Travelers: ' + b.travelers + '</p>' : '') +
+    '<hr style="margin:12px 0;border:0;border-top:1px solid var(--line)">' +
+    '<div style="display:flex;justify-content:space-between"><b>Amount due</b><span class="price">' + (b.amount_pkr ? SW.pkr(b.amount_pkr) : SW.esc('As per fare — our team will confirm')) + '</span></div>' +
+    (b.rejection_reason ? '<div class="alert alert-error" style="margin-top:12px"><b>Payment rejected:</b> ' + SW.esc(b.rejection_reason) + '<br>Please pay again and resubmit.</div>' : '');
+  if (b.status !== 'pending_payment') {
+    document.getElementById('proofForm').innerHTML = '<div class="alert alert-info">Payment proof already submitted for this booking. Track its status in <a href="my-bookings.html">My Bookings</a>.</div>';
+  }
+
+  const { methods } = await SW.api('/api/payment-methods');
+  const isPlaceholder = m => /placeholder/i.test(m.name + ' ' + (m.account_title || '') + ' ' + (m.account_number || ''));
+  document.getElementById('methodsBox').innerHTML = methods.map((m, i) =>
+    '<div class="pay-method' + (i === 0 ? ' selected' : '') + '" data-mid="' + m.id + '" data-mname="' + SW.esc(m.name) + '">' +
+    '<h4>' + SW.esc(m.name) + (isPlaceholder(m) ? ' <span class="placeholder-flag">Demo details</span>' : '') + '</h4>' +
+    (m.account_title ? '<div style="font-size:.9rem">Account title: <b>' + SW.esc(m.account_title) + '</b></div>' : '') +
+    (m.account_number ? '<div class="acct"><span>' + SW.esc(m.account_number) + '</span><button type="button" class="btn btn-ghost btn-sm" onclick="copyTxt(\'' + SW.esc(m.account_number).replace(/'/g, "\\'") + '\',this)">Copy</button></div>' : '') +
+    (m.iban ? '<div style="font-size:.85rem">IBAN: <b>' + SW.esc(m.iban) + '</b></div>' : '') +
+    (m.instructions ? '<p class="form-hint" style="margin-top:8px">' + SW.esc(m.instructions) + '</p>' : '') +
+    '</div>'
+  ).join('');
+  document.getElementById('methodSelect').innerHTML = methods.map(m => '<option>' + SW.esc(m.name) + '</option>').join('');
+  document.querySelectorAll('.pay-method').forEach(el => el.onclick = () => {
+    document.querySelectorAll('.pay-method').forEach(x => x.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('methodSelect').value = el.dataset.mname;
+  });
+  window.copyTxt = copyTxt;
+})();
+
+document.getElementById('proofForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const { bookings } = await SW.api('/api/bookings/mine');
+  const b = bookings.find(x => x.ref === ref);
+  if (!b) return;
+  const fd = new FormData(e.target);
+  const btn = document.getElementById('proofBtn');
+  btn.disabled = true; btn.textContent = 'Uploading...';
+  try {
+    await SW.api('/api/bookings/' + b.id + '/payment-proof', { method: 'POST', body: fd });
+    SW.toast('Payment proof submitted! We will confirm shortly.');
+    setTimeout(() => location.href = 'my-bookings.html', 1200);
+  } catch (err) { SW.toast(err.message); btn.disabled = false; btn.textContent = 'Submit Payment Proof'; }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Complete Booking</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+<script src="assets/js/site-config.js"></script>
+<script src="assets/js/app.js"></script>
+</head>
+<body>
+<div id="site-header"></div>
+
+<div class="container" style="margin-top:26px;margin-bottom:60px">
+  <div class="steps">
+    <div class="step done"><span class="n">1</span><br>Select Flight</div>
+    <div class="step active"><span class="n">2</span><br>Traveler Details</div>
+    <div class="step"><span class="n">3</span><br>Manual Payment</div>
+    <div class="step"><span class="n">4</span><br>Ticket Issued</div>
+  </div>
+
+  <div class="two-col">
+    <div class="form-card">
+      <h2 style="margin-bottom:6px">Traveler Details</h2>
+      <p class="form-hint" style="margin-bottom:20px">Enter names <b>exactly as on passport / CNIC</b>. Wrong names can cause ticket cancellation.</p>
+      <form id="bookingForm">
+        <div id="paxFields"></div>
+        <h3 style="margin:18px 0 10px">Contact Information</h3>
+        <div class="form-row">
+          <div class="form-group"><label>Email *</label><input type="email" name="email" required></div>
+          <div class="form-group"><label>Phone / WhatsApp *</label><input name="phone" placeholder="03xx-xxxxxxx" required></div>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit" id="submitBtn">Continue to Payment</button>
+      </form>
+    </div>
+    <div>
+      <div class="form-card" style="position:sticky;top:84px">
+        <h3>Flight Summary</h3>
+        <div id="offerSummary"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="site-footer"></div>
+
+<script>
+if (!SW.requireLogin()) throw new Error('redirect');
+SW.renderChrome('flights.html');
+
+const offer = JSON.parse(sessionStorage.getItem('sw_offer') || 'null');
+if (!offer) { location.href = 'flights.html'; throw new Error('no offer'); }
+
+const s0 = offer.slices[0];
+document.getElementById('offerSummary').innerHTML =
+  '<div style="font-weight:800;font-size:1.1rem">' + SW.esc(offer.airline_name || offer.airline) + '</div>' +
+  '<div class="flight-route"><div><div class="flight-airport">' + s0.origin + '</div><div class="flight-time">' + SW.fmtTime(s0.departure) + '</div></div>' +
+  '<div style="flex:1"><div class="flight-line"></div><div class="flight-stops">' + (s0.stops === 0 ? 'Non-stop' : s0.stops + ' stop') + ' · ' + SW.dur(s0.duration) + '</div></div>' +
+  '<div style="text-align:right"><div class="flight-airport">' + s0.destination + '</div><div class="flight-time">' + SW.fmtTime(s0.arrival) + '</div></div></div>' +
+  '<p style="font-size:.85rem;color:var(--muted)">' + SW.fmtDate(s0.departure) + (offer.slices[1] ? ' · Return ' + SW.fmtDate(offer.slices[1].departure) : ' · One way') + '</p>' +
+  '<hr style="margin:12px 0;border:0;border-top:1px solid var(--line)">' +
+  '<div style="display:flex;justify-content:space-between;align-items:center"><b>Total</b><span class="price">' + SW.money(offer.total_amount, offer.total_currency) + '</span></div>' +
+  '<p class="form-hint" style="margin-top:10px">You will pay manually after booking (bank / JazzCash / Easypaisa). No online payment needed.</p>';
+
+// count travelers from slices? offer doesn't carry pax count — ask user
+const box = document.getElementById('paxFields');
+let paxCount = parseInt(sessionStorage.getItem('sw_pax') || '1');
+box.innerHTML =
+  '<div class="form-group"><label>Number of travelers *</label><select id="paxCount">' +
+  [1,2,3,4,5,6].map(n => '<option value="' + n + '"' + (n === paxCount ? ' selected' : '') + '>' + n + ' traveler' + (n>1?'s':'') + '</option>').join('') +
+  '</select></div><div id="paxList"></div>';
+
+function renderPax(n) {
+  const list = document.getElementById('paxList');
+  let html = '';
+  for (let i = 0; i < n; i++) {
+    html += '<div style="border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px">' +
+      '<h4 style="margin-bottom:12px">Traveler ' + (i+1) + '</h4>' +
+      '<div class="form-row">' +
+      '<div class="form-group"><label>Title *</label><select name="p' + i + '_title"><option value="mr">Mr</option><option value="ms">Ms</option><option value="mrs">Mrs</option><option value="miss">Miss</option><option value="dr">Dr</option></select></div>' +
+      '<div class="form-group"><label>Gender *</label><select name="p' + i + '_gender"><option value="m">Male</option><option value="f">Female</option></select></div></div>' +
+      '<div class="form-row">' +
+      '<div class="form-group"><label>Given name (as on document) *</label><input name="p' + i + '_given" required></div>' +
+      '<div class="form-group"><label>Family name (as on document) *</label><input name="p' + i + '_family" required></div></div>' +
+      '<div class="form-row">' +
+      '<div class="form-group"><label>Date of birth *</label><input type="date" name="p' + i + '_dob" required></div>' +
+      '<div class="form-group"><label>Passport number (for international)</label><input name="p' + i + '_pp" placeholder="Optional for domestic"></div></div>' +
+      '<div class="form-row">' +
+      '<div class="form-group"><label>Passport country (2 letters)</label><input name="p' + i + '_ppc" maxlength="2" placeholder="PK" style="text-transform:uppercase"></div>' +
+      '<div class="form-group"><label>Passport expiry</label><input type="date" name="p' + i + '_ppe"></div></div>' +
+      '</div>';
+  }
+  list.innerHTML = html;
+}
+renderPax(paxCount);
+document.getElementById('paxCount').onchange = e => { paxCount = parseInt(e.target.value); sessionStorage.setItem('sw_pax', paxCount); renderPax(paxCount); };
+
+document.getElementById('bookingForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const passengers = [];
+  for (let i = 0; i < paxCount; i++) {
+    passengers.push({
+      title: f.get('p' + i + '_title'), gender: f.get('p' + i + '_gender'),
+      given_name: (f.get('p' + i + '_given')||'').trim(), family_name: (f.get('p' + i + '_family')||'').trim(),
+      born_on: f.get('p' + i + '_dob'),
+      passport_number: (f.get('p' + i + '_pp')||'').trim() || undefined,
+      passport_country: (f.get('p' + i + '_ppc')||'').toUpperCase().trim() || undefined,
+      passport_expiry: f.get('p' + i + '_ppe') || undefined,
+    });
+    if (!passengers[i].given_name || !passengers[i].family_name || !passengers[i].born_on) {
+      SW.toast('Please complete all traveler fields'); return;
+    }
+  }
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = 'Creating booking...';
+  try {
+    const title = s0.origin + ' → ' + s0.destination + ' · ' + (offer.airline_name || offer.airline) + ' · ' + SW.fmtDate(s0.departure);
+    const { booking } = await SW.api('/api/bookings', { method: 'POST', body: {
+      type: 'flight', title, offer_data: offer, passengers,
+      contact: { email: f.get('email'), phone: f.get('phone') },
+      amount_pkr: null, travel_date: s0.departure.slice(0,10), travelers: paxCount,
+    }});
+    sessionStorage.removeItem('sw_offer');
+    location.href = 'payment.html?ref=' + booking.ref;
+  } catch (err) { SW.toast(err.message); btn.disabled = false; btn.textContent = 'Continue to Payment'; }
+});
+</script>
+</body>
+</html>

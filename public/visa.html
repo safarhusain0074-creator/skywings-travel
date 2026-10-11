@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visa Services</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+<script src="assets/js/site-config.js"></script>
+<script src="assets/js/app.js"></script>
+<style>
+.visa-badge{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.05rem;color:#fff;background:linear-gradient(135deg,#0b2c4d,#0e5f7e);flex:none}
+.visa-card{background:#fff;border:1px solid #e6edf3;border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:12px;box-shadow:0 2px 10px rgba(11,44,77,.05)}
+.visa-card h3{margin:0;font-size:1.25rem}
+.visa-card .vtype{color:#0e5f7e;font-weight:700;font-size:.9rem;margin-top:-8px}
+.visa-meta{display:flex;gap:16px;flex-wrap:wrap;font-size:.88rem;color:#445}
+.visa-meta b{color:#0b2c4d}
+.visa-card ul{margin:0;padding-left:18px;font-size:.9rem;color:#445;display:grid;gap:6px}
+.country-pill{background:#fff;border:1px solid #e6edf3;border-radius:999px;padding:8px 16px;font-size:.88rem;font-weight:600;color:#0b2c4d;white-space:nowrap}
+.schengen-note{background:#f2f7fb;border:1px dashed #0e5f7e55;border-radius:12px;padding:14px 18px;font-size:.92rem;color:#345;margin-bottom:18px}
+</style>
+</head>
+<body>
+<div id="site-header"></div>
+
+<section class="hero" style="padding:44px 0">
+  <div class="container"><h1>Visa Services</h1><p>USA, Canada, UK & Schengen visa assistance with high approval guidance. Operating since 2002 — 100K+ happy clients.</p></div>
+</section>
+
+<div class="container" style="margin:34px auto 20px">
+  <h2 style="margin-bottom:6px">Popular Visa Categories</h2>
+  <p class="sub" style="margin-bottom:20px">Select a visa to see requirements, then apply — our team calls you back.</p>
+  <div class="grid-3" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
+
+    <div class="visa-card">
+      <div style="display:flex;gap:14px;align-items:center"><div class="visa-badge">US</div><div><h3>USA Visa</h3><div class="vtype">B1/B2 — Tourist & Business</div></div></div>
+      <div class="visa-meta"><span>Embassy fee approx: <b>$185</b></span><span>Processing: <b>2–6 weeks</b></span></div>
+      <div style="background:#fff8e6;border:1px solid #f0d48a;border-radius:10px;padding:10px 14px;font-size:.9rem">SkyWings processing fee: <b>Rs 19,999</b> <span style="color:#776">(embassy/visa fee not included)</span></div>
+      <ul>
+        <li>Valid passport (6+ months)</li>
+        <li>DS-160 form + interview appointment</li>
+        <li>Bank statement & employment proof</li>
+        <li>Interview preparation guidance</li>
+      </ul>
+      <button class="btn btn-primary btn-block apply-btn" data-country="USA">Apply for USA Visa</button>
+    </div>
+
+    <div class="visa-card">
+      <div style="display:flex;gap:14px;align-items:center"><div class="visa-badge">CA</div><div><h3>Canada Visa</h3><div class="vtype">Visitor Visa (TRV)</div></div></div>
+      <div class="visa-meta"><span>Embassy fee approx: <b>CAD 100</b></span><span>Processing: <b>4–8 weeks</b></span></div>
+      <div style="background:#fff8e6;border:1px solid #f0d48a;border-radius:10px;padding:10px 14px;font-size:.9rem">SkyWings processing fee: <b>Rs 19,999</b> <span style="color:#776">(embassy/visa fee not included)</span></div>
+      <ul>
+        <li>Valid passport + travel history</li>
+        <li>Biometrics at visa centre</li>
+        <li>Bank statement & ties to Pakistan</li>
+        <li>Invitation letter (if visiting family)</li>
+      </ul>
+      <button class="btn btn-primary btn-block apply-btn" data-country="Canada">Apply for Canada Visa</button>
+    </div>
+
+    <div class="visa-card">
+      <div style="display:flex;gap:14px;align-items:center"><div class="visa-badge">UK</div><div><h3>UK Visa</h3><div class="vtype">Standard Visitor Visa</div></div></div>
+      <div class="visa-meta"><span>Embassy fee approx: <b>£115</b></span><span>Processing: <b>3–6 weeks</b></span></div>
+      <div style="background:#fff8e6;border:1px solid #f0d48a;border-radius:10px;padding:10px 14px;font-size:.9rem">SkyWings processing fee: <b>Rs 19,999</b> <span style="color:#776">(embassy/visa fee not included)</span></div>
+      <ul>
+        <li>Valid passport (6+ months)</li>
+        <li>Biometrics + document submission</li>
+        <li>Bank statement (6 months)</li>
+        <li>Employment / business proof</li>
+      </ul>
+      <button class="btn btn-primary btn-block apply-btn" data-country="UK">Apply for UK Visa</button>
+    </div>
+
+  </div>
+</div>
+
+<div class="container" style="margin:26px auto 20px">
+  <h2 style="margin-bottom:6px">Schengen / Europe Visa</h2>
+  <p class="sub" style="margin-bottom:14px">One visa, 29 countries — travel freely across Europe.</p>
+  <div class="schengen-note"><b>Embassy fee approx: €90</b> &nbsp;•&nbsp; <b>Processing: 2–4 weeks</b> &nbsp;•&nbsp; <b>SkyWings processing fee: Rs 19,999</b> (embassy/visa fee not included) &nbsp;•&nbsp; Requirements: valid passport, travel insurance, confirmed flights & hotel bookings, bank statement, employment proof. Apply through the country of your first entry or longest stay.</div>
+  <div style="display:flex;flex-wrap:wrap;gap:10px" id="schengenGrid"></div>
+  <div style="margin-top:18px"><button class="btn btn-primary apply-btn" data-country="Schengen (Europe)">Apply for Schengen Visa</button></div>
+</div>
+
+<div class="container" style="margin:30px auto 60px">
+  <div class="two-col">
+    <div>
+      <div class="form-card">
+        <h3>How it works</h3>
+        <div class="steps" style="margin:14px 0 0">
+          <div class="step"><span class="n">1</span><br>Submit the request form</div>
+          <div class="step"><span class="n">2</span><br>We call you with the document checklist</div>
+          <div class="step"><span class="n">3</span><br>We prepare & file your application</div>
+          <div class="step"><span class="n">4</span><br>Visa decision & passport return</div>
+        </div>
+      </div>
+      <div class="form-card" style="margin-top:22px">
+        <h3>Also available</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">
+          <span class="country-pill">Turkey</span><span class="country-pill">UAE (Dubai)</span><span class="country-pill">Malaysia</span><span class="country-pill">Thailand</span><span class="country-pill">Saudi Arabia</span><span class="country-pill">Azerbaijan</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="form-card" id="visaFormCard" style="position:sticky;top:84px">
+        <h3 style="margin-bottom:14px">Request a Callback</h3>
+        <form id="visaForm">
+          <div class="form-group"><label>Full name *</label><input name="name" required></div>
+          <div class="form-row">
+            <div class="form-group"><label>Email *</label><input type="email" name="email" required></div>
+            <div class="form-group"><label>Phone *</label><input name="phone" required></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Country *</label><input name="country" id="visaCountry" placeholder="e.g. USA, Canada, Schengen" required></div>
+            <div class="form-group"><label>Planned travel date</label><input type="date" name="travel_date"></div>
+          </div>
+          <div class="form-group"><label>Purpose</label><select name="purpose"><option>Tourist</option><option>Business</option><option>Family Visit</option><option>Umrah</option><option>Study</option><option>Other</option></select></div>
+          <div class="form-group"><label>Notes</label><textarea name="notes" rows="3" placeholder="Anything we should know?"></textarea></div>
+          <button class="btn btn-primary btn-block" type="submit" id="visaBtn">Request Callback</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="site-footer"></div>
+
+<script>
+SW.renderChrome('visa.html');
+
+const schengen = ['Austria','Belgium','Bulgaria','Croatia','Czechia','Denmark','Estonia','Finland','France','Germany','Greece','Hungary','Iceland','Italy','Latvia','Liechtenstein','Lithuania','Luxembourg','Malta','Netherlands','Norway','Poland','Portugal','Romania','Slovakia','Slovenia','Spain','Sweden','Switzerland'];
+document.getElementById('schengenGrid').innerHTML = schengen.map(c =>
+  '<span class="country-pill">' + c + '</span>').join('');
+
+document.querySelectorAll('.apply-btn').forEach(b => b.addEventListener('click', () => {
+  document.getElementById('visaCountry').value = b.dataset.country;
+  document.getElementById('visaFormCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}));
+
+document.getElementById('visaForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = Object.fromEntries(new FormData(e.target));
+  const btn = document.getElementById('visaBtn');
+  btn.disabled = true; btn.textContent = 'Submitting...';
+  try {
+    const r = await SW.api('/api/visa-requests', { method: 'POST', body: f });
+    SW.toast(r.message);
+    e.target.reset();
+  } catch (err) { SW.toast(err.message); }
+  btn.disabled = false; btn.textContent = 'Request Callback';
+});
+</script>
+</body>
+</html>
