@@ -20,7 +20,7 @@
 
   /* ---------- header / footer ---------- */
   const NAV = [
-    ['index.html', 'Home'], ['flights.html', 'Flights'], ['tours.html', 'Tours'],
+    ['index.html', 'Home'], ['flights.html', 'Flights'], ['tickets.html', 'Tickets'], ['tours.html', 'Tours'],
     ['hotels.html', 'Hotels'], ['umrah.html', 'Umrah'], ['visa.html', 'Visa'],
     ['contact.html', 'Contact'],
   ];
@@ -50,7 +50,7 @@
       ff.innerHTML =
         '<footer class="site-footer"><div class="container"><div class="footer-grid">' +
         '<div><h4>' + esc(C.brandName) + '</h4><p style="font-size:.9rem">' + esc(C.tagline) + '. Your trusted partner for flights, tours, hotels, Umrah and visa services across Pakistan and beyond.</p></div>' +
-        '<div><h4>Services</h4><a href="flights.html">Flight Booking</a><a href="tours.html">Tour Packages</a><a href="hotels.html">Hotels</a><a href="umrah.html">Umrah Packages</a><a href="visa.html">Visa Services</a></div>' +
+        '<div><h4>Services</h4><a href="flights.html">Flight Booking</a><a href="tickets.html">Flight Tickets</a><a href="tours.html">Tour Packages</a><a href="hotels.html">Hotels</a><a href="umrah.html">Umrah Packages</a><a href="visa.html">Visa Services</a></div>' +
         '<div><h4>Company</h4><a href="contact.html">Contact Us</a><a href="my-bookings.html">My Bookings</a><a href="login.html">Login</a><a href="signup.html">Create Account</a></div>' +
         '<div><h4>Contact</h4><a href="tel:' + C.phone.replace(/\s/g, '') + '">' + esc(C.phone) + '</a>' +
         '<a href="https://wa.me/' + C.whatsapp + '" target="_blank">WhatsApp: ' + esc(C.phone) + '</a>' +

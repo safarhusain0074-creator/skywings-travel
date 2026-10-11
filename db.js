@@ -98,6 +98,23 @@ async function init() {
     sort_order INTEGER NOT NULL DEFAULT 0
   )`);
 
+  await run(`CREATE TABLE IF NOT EXISTS tickets (
+    id ${ID_DEF},
+    airline TEXT NOT NULL,
+    flight_no TEXT,
+    origin TEXT NOT NULL,
+    destination TEXT NOT NULL,
+    departure TEXT,
+    arrival TEXT,
+    price_pkr REAL NOT NULL,
+    seats_total INTEGER NOT NULL DEFAULT 0,
+    seats_left INTEGER NOT NULL DEFAULT 0,
+    cabin TEXT,
+    notes TEXT,
+    active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL
+  )`);
+
   await run(`CREATE TABLE IF NOT EXISTS bookings (
     id ${ID_DEF},
     ref TEXT UNIQUE NOT NULL,

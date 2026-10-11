@@ -219,6 +219,22 @@ app.get('/api/packages/:id', async (req, res) => {
   } catch (e) { res.status(500).json({ error: 'Could not load package' }); }
 });
 
+// ---------- Tickets (public) ----------
+app.get('/api/tickets', async (req, res) => {
+  try {
+    const rows = await db.all('SELECT * FROM tickets WHERE active = 1 AND seats_left > 0 ORDER BY departure');
+    res.json({ tickets: rows });
+  } catch (e) { res.status(500).json({ error: 'Could not load tickets' }); }
+});
+
+app.get('/api/tickets/:id', async (req, res) => {
+  try {
+    const t = await db.get('SELECT * FROM tickets WHERE id = $1 AND active = 1', [req.params.id]);
+    if (!t) return res.status(404).json({ error: 'Ticket not found' });
+    res.json({ ticket: t });
+  } catch (e) { res.status(500).json({ error: 'Could not load ticket' }); }
+});
+
 // ---------- Payment methods (public) ----------
 app.get('/api/payment-methods', async (req, res) => {
   try {
@@ -256,11 +272,11 @@ app.post('/api/visa-requests', async (req, res) => {
 // ---------- Bookings (customer) ----------
 app.post('/api/bookings', requireAuth, async (req, res) => {
   try {
-    const { type, title, offer_data, package_id, passengers, contact, amount_pkr, travel_date, travelers } = req.body || {};
-    if (!['flight', 'tour', 'hotel', 'umrah'].includes(type)) {
+    const { type, title, offer_data, package_id, ticket_id, passengers, contact, amount_pkr, travel_date, travelers } = req.body || {};
+    if (!['flight', 'tour', 'hotel', 'umrah', 'ticket'].includes(type)) {
       return res.status(400).json({ error: 'Invalid booking type' });
     }
-    if (!title) return res.status(400).json({ error: 'Booking title is required' });
+    if (!title && !ticket_id) return res.status(400).json({ error: 'Booking title is required' });
     let finalTitle = title;
     let finalAmount = amount_pkr;
     if (package_id) {
@@ -269,6 +285,16 @@ app.post('/api/bookings', requireAuth, async (req, res) => {
       finalTitle = pkg.title;
       finalAmount = pkg.price_pkr * (travelers > 1 ? travelers : 1);
     }
+    if (ticket_id) {
+      const t = await db.get('SELECT * FROM tickets WHERE id = $1 AND active = 1', [ticket_id]);
+      if (!t) return res.status(400).json({ error: 'Ticket not available' });
+      const n = travelers && travelers > 0 ? travelers : 1;
+      if (t.seats_left < n) return res.status(400).json({ error: 'Not enough seats left on this ticket' });
+      finalTitle = t.airline + (t.flight_no ? ' ' + t.flight_no : '') + ': ' + t.origin + ' → ' + t.destination;
+      finalAmount = t.price_pkr * n;
+      await db.run('UPDATE tickets SET seats_left = seats_left - $1 WHERE id = $2', [n, t.id]);
+    }
+    if (!finalTitle) return res.status(400).json({ error: 'Booking title is required' });
     const booking = await createBooking({
       userId: req.user.id, type, title: finalTitle,
       offerData: offer_data || null,
@@ -518,6 +544,41 @@ admin.put('/packages/:id', async (req, res) => {
 });
 admin.delete('/packages/:id', async (req, res) => {
   await db.run('DELETE FROM packages WHERE id = $1', [req.params.id]);
+  res.json({ ok: true });
+});
+
+// Tickets CRUD
+admin.get('/tickets', async (req, res) => {
+  const rows = await db.all('SELECT * FROM tickets ORDER BY departure');
+  res.json({ tickets: rows });
+});
+admin.post('/tickets', async (req, res) => {
+  try {
+    const { airline, flight_no, origin, destination, departure, arrival, price_pkr, seats_total, cabin, notes, active } = req.body || {};
+    if (!airline || !origin || !destination || price_pkr == null) {
+      return res.status(400).json({ error: 'Airline, origin, destination and price are required' });
+    }
+    const st = parseInt(seats_total) || 0;
+    await db.run(
+      `INSERT INTO tickets (airline, flight_no, origin, destination, departure, arrival, price_pkr, seats_total, seats_left, cabin, notes, active, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+      [airline, flight_no || null, origin, destination, departure || null, arrival || null, price_pkr, st, st, cabin || null, notes || null, active === false ? 0 : 1, now2()]
+    );
+    res.status(201).json({ ok: true });
+  } catch (e) { res.status(500).json({ error: 'Could not create ticket' }); }
+});
+admin.put('/tickets/:id', async (req, res) => {
+  try {
+    const { airline, flight_no, origin, destination, departure, arrival, price_pkr, seats_total, seats_left, cabin, notes, active } = req.body || {};
+    await db.run(
+      `UPDATE tickets SET airline=$1, flight_no=$2, origin=$3, destination=$4, departure=$5, arrival=$6, price_pkr=$7, seats_total=$8, seats_left=$9, cabin=$10, notes=$11, active=$12 WHERE id=$13`,
+      [airline, flight_no || null, origin, destination, departure || null, arrival || null, price_pkr, parseInt(seats_total) || 0, parseInt(seats_left) || 0, cabin || null, notes || null, active ? 1 : 0, req.params.id]
+    );
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: 'Could not update ticket' }); }
+});
+admin.delete('/tickets/:id', async (req, res) => {
+  await db.run('DELETE FROM tickets WHERE id = $1', [req.params.id]);
   res.json({ ok: true });
 });
 

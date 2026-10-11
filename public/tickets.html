@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flight Tickets</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+<script src="assets/js/site-config.js"></script>
+<script src="assets/js/app.js"></script>
+</head>
+<body>
+<div id="site-header"></div>
+
+<section class="hero" style="padding:44px 0">
+  <div class="container"><h1>Available Flight Tickets</h1><p>Ready tickets in stock — pick your route, book online, pay manually.</p></div>
+</section>
+
+<div class="container" style="margin:30px auto 60px">
+  <div class="toolbar">
+    <input id="q" placeholder="Search route or airline..." style="max-width:320px">
+    <button class="btn btn-primary" id="searchBtn">Search</button>
+  </div>
+  <div class="grid-3" id="grid"></div>
+  <div id="bookBox" style="margin-top:26px"></div>
+</div>
+
+<div id="site-footer"></div>
+
+<script>
+SW.renderChrome('tickets.html');
+
+function fmtDT(v) {
+  if (!v) return '—';
+  const d = new Date(v);
+  return isNaN(d) ? v.slice(0, 16).replace('T', ' ') : d.toLocaleString('en-PK', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+let allTickets = [];
+
+async function load() {
+  const box = document.getElementById('grid');
+  SW.spinner(box);
+  try {
+    const { tickets } = await SW.api('/api/tickets');
+    allTickets = tickets;
+    const q = (document.getElementById('q').value || '').toLowerCase();
+    const list = tickets.filter(t => !q || (t.origin + ' ' + t.destination + ' ' + t.airline + ' ' + (t.flight_no || '')).toLowerCase().includes(q));
+    if (!list.length) { box.innerHTML = '<div class="empty" style="grid-column:1/-1">No tickets available right now. Check back soon or contact us on WhatsApp.</div>'; return; }
+    box.innerHTML = list.map((t, i) =>
+      '<div class="card"><div class="card-visual" style="background:' + SW.gradient(i) + '">' + SW.ICONS.plane +
+      '<span class="badge badge-tour">TICKET</span></div><div class="card-body">' +
+      '<h3>' + SW.esc(t.origin) + ' → ' + SW.esc(t.destination) + '</h3>' +
+      '<div class="card-meta"><span>' + SW.esc(t.airline) + (t.flight_no ? ' · ' + SW.esc(t.flight_no) : '') + '</span>' +
+      (t.cabin ? '<span>' + SW.esc(t.cabin) + '</span>' : '') + '</div>' +
+      '<div class="card-meta"><span>🛫 ' + fmtDT(t.departure) + '</span></div>' +
+      '<p style="font-size:.9rem;color:var(--muted)">' + t.seats_left + ' seats left' + (t.notes ? ' · ' + SW.esc(t.notes.slice(0, 80)) : '') + '</p>' +
+      '<div class="card-foot"><span class="price">' + SW.pkr(t.price_pkr) + ' <small>/ person</small></span>' +
+      '<button class="btn btn-primary btn-sm" data-book="' + t.id + '">Book</button></div></div></div>'
+    ).join('');
+    box.querySelectorAll('[data-book]').forEach(b => b.onclick = () => showBookForm(allTickets.find(x => x.id == b.dataset.book)));
+  } catch { box.innerHTML = '<div class="empty" style="grid-column:1/-1">Could not load tickets.</div>'; }
+}
+
+function showBookForm(t) {
+  const box = document.getElementById('bookBox');
+  const maxT = Math.min(t.seats_left, 9);
+  let opts = '';
+  for (let i = 1; i <= maxT; i++) opts += '<option>' + i + '</option>';
+  box.innerHTML = '<div class="form-card" style="max-width:560px"><h3>Book: ' + SW.esc(t.origin) + ' → ' + SW.esc(t.destination) + '</h3>' +
+    '<p style="color:var(--muted);font-size:.92rem">' + SW.esc(t.airline) + (t.flight_no ? ' ' + SW.esc(t.flight_no) : '') + ' · 🛫 ' + fmtDT(t.departure) + ' · <b>' + SW.pkr(t.price_pkr) + '</b> / person</p>' +
+    '<form id="bookForm" style="margin-top:14px">' +
+    '<div class="form-row"><div class="form-group"><label>Travelers *</label><select name="travelers">' + opts + '</select></div>' +
+    '<div class="form-group"><label>Your name *</label><input name="name" required></div></div>' +
+    '<div class="form-group"><label>Phone / WhatsApp *</label><input name="phone" required></div>' +
+    '<div class="form-group"><label>Notes (optional)</label><textarea name="notes" rows="2"></textarea></div>' +
+    '<button class="btn btn-primary btn-block" type="submit" id="bookBtn">Confirm Booking</button></form>' +
+    '<p class="form-hint" style="margin-top:10px">You will pay manually on the next step (bank / JazzCash / Easypaisa).</p></div>';
+  box.scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('bookForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!SW.requireLogin()) return;
+    const f = new FormData(e.target);
+    const travelers = parseInt(f.get('travelers'));
+    const btn = document.getElementById('bookBtn');
+    btn.disabled = true; btn.textContent = 'Booking...';
+    try {
+      const { booking } = await SW.api('/api/bookings', { method: 'POST', body: {
+        type: 'ticket', ticket_id: t.id,
+        passengers: [{ title: 'mr', given_name: f.get('name'), family_name: '', born_on: '1990-01-01' }],
+        contact: { email: SW.getUser().email, phone: f.get('phone'), notes: f.get('notes') },
+        travel_date: t.departure ? t.departure.slice(0, 10) : null, travelers,
+      }});
+      location.href = 'payment.html?ref=' + booking.ref;
+    } catch (err) { SW.toast(err.message); btn.disabled = false; btn.textContent = 'Confirm Booking'; }
+  });
+}
+
+document.getElementById('searchBtn').onclick = load;
+document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); load(); } });
+load();
+</script>
+</body>
+</html>

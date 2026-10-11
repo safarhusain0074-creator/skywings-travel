@@ -18,6 +18,7 @@
       <button data-tab="overview" class="active">Overview</button>
       <button data-tab="bookings">Bookings</button>
       <button data-tab="packages">Packages</button>
+      <button data-tab="tickets">Tickets</button>
       <button data-tab="paymethods">Payment Methods</button>
       <button data-tab="visas">Visa Requests</button>
       <button data-tab="users">Users</button>
@@ -46,7 +47,7 @@ modalBack.addEventListener('click', e => { if (e.target === modalBack) closeModa
 document.querySelectorAll('#adminTabs button').forEach(b => b.onclick = () => {
   document.querySelectorAll('#adminTabs button').forEach(x => x.classList.remove('active'));
   b.classList.add('active');
-  ({ overview: showOverview, bookings: showBookings, packages: showPackages, paymethods: showPayMethods, visas: showVisas, users: showUsers })[b.dataset.tab]();
+  ({ overview: showOverview, bookings: showBookings, packages: showPackages, tickets: showTickets, paymethods: showPayMethods, visas: showVisas, users: showUsers })[b.dataset.tab]();
 });
 
 /* ---------- Overview ---------- */
@@ -189,6 +190,66 @@ function pkgForm(p) {
       if (p) await SW.api('/api/admin/packages/' + p.id, { method: 'PUT', body: f });
       else await SW.api('/api/admin/packages', { method: 'POST', body: f });
       closeModal(); SW.toast('Saved'); showPackages();
+    } catch (err) { SW.toast(err.message); }
+  });
+}
+
+/* ---------- Payment methods ---------- */
+async function showTickets() {
+  SW.spinner(main);
+  const { tickets } = await SW.api('/api/admin/tickets');
+  main.innerHTML =
+    '<div class="toolbar"><button class="btn btn-primary" id="addTix">+ Add Ticket</button>' +
+    '<span style="color:var(--muted);font-size:.9rem">' + tickets.length + ' tickets in stock</span></div>' +
+    '<div class="table-wrap"><table><thead><tr><th>Route</th><th>Airline / Flight</th><th>Departure</th><th>Price</th><th>Seats Left</th><th>Active</th><th></th></tr></thead><tbody>' +
+    tickets.map(t => '<tr><td><b>' + SW.esc(t.origin) + ' → ' + SW.esc(t.destination) + '</b></td>' +
+      '<td>' + SW.esc(t.airline) + (t.flight_no ? '<br><span style="font-size:.78rem;color:var(--muted)">' + SW.esc(t.flight_no) + (t.cabin ? ' · ' + SW.esc(t.cabin) : '') + '</span>' : '') + '</td>' +
+      '<td style="font-size:.85rem">' + (t.departure ? SW.esc(t.departure.replace('T', ' ').slice(0, 16)) : '—') + '</td>' +
+      '<td>' + SW.pkr(t.price_pkr) + '</td><td>' + t.seats_left + ' / ' + t.seats_total + '</td>' +
+      '<td>' + (t.active ? 'Yes' : 'No') + '</td>' +
+      '<td><button class="btn btn-ghost btn-sm" data-edit="' + t.id + '">Edit</button> <button class="btn btn-danger btn-sm" data-del="' + t.id + '">Delete</button></td></tr>').join('') +
+    '</tbody></table></div>';
+  document.getElementById('addTix').onclick = () => ticketForm(null);
+  main.querySelectorAll('[data-edit]').forEach(b => b.onclick = async () => {
+    const { tickets: all } = await SW.api('/api/admin/tickets');
+    ticketForm(all.find(x => x.id == b.dataset.edit));
+  });
+  main.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    if (!confirm('Delete this ticket?')) return;
+    await SW.api('/api/admin/tickets/' + b.dataset.del, { method: 'DELETE' });
+    SW.toast('Deleted'); showTickets();
+  });
+}
+
+function ticketForm(t) {
+  const dt = v => v ? v.slice(0, 16) : '';
+  openModal('<h3>' + (t ? 'Edit Ticket' : 'Add Ticket to Stock') + '</h3><form id="tixForm">' +
+    '<div class="form-row"><div class="form-group"><label>Airline *</label><input name="airline" required placeholder="e.g. PIA, Emirates" value="' + SW.esc(t ? t.airline : '') + '"></div>' +
+    '<div class="form-group"><label>Flight No.</label><input name="flight_no" placeholder="e.g. PK-307" value="' + SW.esc(t ? t.flight_no : '') + '"></div></div>' +
+    '<div class="form-row"><div class="form-group"><label>Origin *</label><input name="origin" required placeholder="e.g. Lahore (LHE)" value="' + SW.esc(t ? t.origin : '') + '"></div>' +
+    '<div class="form-group"><label>Destination *</label><input name="destination" required placeholder="e.g. Dubai (DXB)" value="' + SW.esc(t ? t.destination : '') + '"></div></div>' +
+    '<div class="form-row"><div class="form-group"><label>Departure</label><input type="datetime-local" name="departure" value="' + dt(t && t.departure) + '"></div>' +
+    '<div class="form-group"><label>Arrival</label><input type="datetime-local" name="arrival" value="' + dt(t && t.arrival) + '"></div></div>' +
+    '<div class="form-row"><div class="form-group"><label>Price (PKR) *</label><input type="number" name="price_pkr" min="0" required value="' + (t ? t.price_pkr : '') + '"></div>' +
+    '<div class="form-group"><label>Cabin</label><select name="cabin">' +
+    ['', 'Economy', 'Business', 'First'].map(c => '<option value="' + c + '"' + (t && t.cabin === c ? ' selected' : '') + '>' + (c || '—') + '</option>').join('') + '</select></div></div>' +
+    '<div class="form-row"><div class="form-group"><label>Total Seats *</label><input type="number" name="seats_total" min="0" required value="' + (t ? t.seats_total : '') + '"></div>' +
+    '<div class="form-group"><label>Seats Left</label><input type="number" name="seats_left" min="0" value="' + (t ? t.seats_left : '') + '" placeholder="auto = total"></div></div>' +
+    '<div class="form-group"><label>Notes (optional)</label><textarea name="notes" rows="2">' + SW.esc(t ? t.notes : '') + '</textarea></div>' +
+    '<div class="form-group"><label>Active</label><select name="active"><option value="1"' + (!t || t.active ? ' selected' : '') + '>Yes</option><option value="0"' + (t && !t.active ? ' selected' : '') + '>No</option></select></div>' +
+    '<button class="btn btn-primary btn-block" type="submit">Save</button></form>');
+  document.getElementById('tixForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const f = Object.fromEntries(new FormData(e.target));
+    f.price_pkr = parseFloat(f.price_pkr);
+    f.seats_total = parseInt(f.seats_total) || 0;
+    f.seats_left = f.seats_left === '' ? undefined : parseInt(f.seats_left) || 0;
+    if (f.seats_left === undefined) f.seats_left = t ? t.seats_left : f.seats_total;
+    f.active = f.active === '1';
+    try {
+      if (t) await SW.api('/api/admin/tickets/' + t.id, { method: 'PUT', body: f });
+      else await SW.api('/api/admin/tickets', { method: 'POST', body: f });
+      closeModal(); SW.toast('Saved'); showTickets();
     } catch (err) { SW.toast(err.message); }
   });
 }
