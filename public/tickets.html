@@ -54,7 +54,7 @@ async function load() {
       (t.cabin ? '<span>' + SW.esc(t.cabin) + '</span>' : '') + '</div>' +
       '<div class="card-meta"><span>🛫 ' + fmtDT(t.departure) + '</span></div>' +
       '<p style="font-size:.9rem;color:var(--muted)">' + t.seats_left + ' seats left' + (t.notes ? ' · ' + SW.esc(t.notes.slice(0, 80)) : '') + '</p>' +
-      '<div class="card-foot"><span class="price">' + SW.pkr(t.price_pkr) + ' <small>/ person</small></span>' +
+      '<div class="card-foot"><span class="price">' + SW.moneyLocal(t.price_pkr) + ' <small>/ person</small></span>' +
       '<button class="btn btn-primary btn-sm" data-book="' + t.id + '">Book</button></div></div></div>'
     ).join('');
     box.querySelectorAll('[data-book]').forEach(b => b.onclick = () => showBookForm(allTickets.find(x => x.id == b.dataset.book)));
@@ -67,7 +67,7 @@ function showBookForm(t) {
   let opts = '';
   for (let i = 1; i <= maxT; i++) opts += '<option>' + i + '</option>';
   box.innerHTML = '<div class="form-card" style="max-width:560px"><h3>Book: ' + SW.esc(t.origin) + ' → ' + SW.esc(t.destination) + '</h3>' +
-    '<p style="color:var(--muted);font-size:.92rem">' + SW.esc(t.airline) + (t.flight_no ? ' ' + SW.esc(t.flight_no) : '') + ' · 🛫 ' + fmtDT(t.departure) + ' · <b>' + SW.pkr(t.price_pkr) + '</b> / person</p>' +
+    '<p style="color:var(--muted);font-size:.92rem">' + SW.esc(t.airline) + (t.flight_no ? ' ' + SW.esc(t.flight_no) : '') + ' · 🛫 ' + fmtDT(t.departure) + ' · <b>' + SW.moneyLocal(t.price_pkr) + '</b> / person</p>' +
     '<form id="bookForm" style="margin-top:14px">' +
     '<div class="form-row"><div class="form-group"><label>Travelers *</label><select name="travelers">' + opts + '</select></div>' +
     '<div class="form-group"><label>Your name *</label><input name="name" required></div></div>' +

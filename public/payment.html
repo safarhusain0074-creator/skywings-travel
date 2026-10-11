@@ -69,7 +69,8 @@ function copyTxt(t, btn) {
     (b.travel_date ? '<p style="font-size:.9rem">Travel date: ' + SW.fmtDate(b.travel_date) + '</p>' : '') +
     (b.travelers ? '<p style="font-size:.9rem">Travelers: ' + b.travelers + '</p>' : '') +
     '<hr style="margin:12px 0;border:0;border-top:1px solid var(--line)">' +
-    '<div style="display:flex;justify-content:space-between"><b>Amount due</b><span class="price">' + (b.amount_pkr ? SW.pkr(b.amount_pkr) : SW.esc('As per fare — our team will confirm')) + '</span></div>' +
+    '<div style="display:flex;justify-content:space-between"><b>Amount due</b><span class="price">' + (b.amount_pkr ? SW.moneyLocal(b.amount_pkr) : SW.esc('As per fare — our team will confirm')) + '</span></div>' +
+    (b.amount_pkr ? '<div style="text-align:right;font-size:.8rem;color:var(--muted)">Payable: ' + SW.pkr(b.amount_pkr) + '</div>' : '') +
     (b.rejection_reason ? '<div class="alert alert-error" style="margin-top:12px"><b>Payment rejected:</b> ' + SW.esc(b.rejection_reason) + '<br>Please pay again and resubmit.</div>' : '');
   if (b.status !== 'pending_payment') {
     document.getElementById('proofForm').innerHTML = '<div class="alert alert-info">Payment proof already submitted for this booking. Track its status in <a href="my-bookings.html">My Bookings</a>.</div>';

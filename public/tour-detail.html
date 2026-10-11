@@ -39,7 +39,7 @@ const id = new URLSearchParams(location.search).get('id');
       (p.itinerary ? '<h3 style="margin-top:14px">Itinerary</h3><p style="white-space:pre-line;font-size:.93rem">' + SW.esc(p.itinerary) + '</p>' : '') +
       '</div></div></div>' +
       '<div><div class="form-card" style="position:sticky;top:84px">' +
-      '<div class="price" style="font-size:1.8rem">' + SW.pkr(p.price_pkr) + '</div><p class="form-hint">per person</p>' +
+      '<div class="price" style="font-size:1.8rem">' + SW.moneyLocal(p.price_pkr) + '</div><p class="form-hint">per person</p>' +
       '<form id="bookForm" style="margin-top:16px">' +
       '<div class="form-group"><label>Travel date *</label><input type="date" name="travel_date" required></div>' +
       '<div class="form-group"><label>Travelers *</label><select name="travelers"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>8</option><option>10</option></select></div>' +

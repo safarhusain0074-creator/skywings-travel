@@ -39,7 +39,7 @@ SW.renderChrome('my-bookings.html');
         (b.pnr ? ' · PNR: <b>' + SW.esc(b.pnr) + '</b>' : '') + '</div>' +
         (b.rejection_reason ? '<div class="alert alert-error" style="margin:10px 0 0"><b>Payment rejected:</b> ' + SW.esc(b.rejection_reason) + '</div>' : '') +
         (b.ticket_details ? '<div class="alert alert-success" style="margin:10px 0 0">' + SW.esc(b.ticket_details) + '</div>' : '') +
-        '</div><div class="flight-price"><div class="amount">' + (b.amount_pkr ? SW.pkr(b.amount_pkr) : '—') + '</div>' + action + '</div></div>';
+        '</div><div class="flight-price"><div class="amount">' + (b.amount_pkr ? SW.moneyLocal(b.amount_pkr) : '—') + '</div>' + action + '</div></div>';
     }).join('');
     box.querySelectorAll('[data-ticket]').forEach(btn => btn.onclick = async () => {
       const { booking } = await SW.api('/api/bookings/' + btn.dataset.ticket);

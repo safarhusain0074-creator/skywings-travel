@@ -210,3 +210,5 @@ tr:hover td{background:#f8fafc}
   .search-grid{grid-template-columns:1fr}
   .section{padding:44px 0}
 }
+.cur-switch{background:#eef4f9;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-weight:700;font-size:.85rem;color:var(--ink);cursor:pointer;max-width:86px}
+.cur-switch:focus{outline:2px solid var(--teal)}

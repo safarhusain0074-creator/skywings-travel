@@ -35,6 +35,9 @@
         '<button class="menu-toggle" id="menuToggle" aria-label="Menu">☰</button>' +
         '<nav class="nav" id="mainNav">' +
         NAV.map(n => '<a href="' + n[0] + '"' + (n[0] === active ? ' class="active"' : '') + '>' + n[1] + '</a>').join('') +
+        '<select id="curSwitch" class="cur-switch" title="Currency">' +
+        Object.keys(CUR_INFO).map(c => '<option value="' + c + '"' + (c === CUR.code ? ' selected' : '') + '>' + c + '</option>').join('') +
+        '</select>' +
         (user
           ? '<a href="my-bookings.html">My Bookings</a>' + (user.is_admin ? '<a href="admin.html">Admin</a>' : '') +
             '<a href="#" id="logoutLink" class="btn btn-ghost btn-sm">Logout</a>'
@@ -44,6 +47,12 @@
       if (t) t.onclick = () => document.getElementById('mainNav').classList.toggle('open');
       const lo = document.getElementById('logoutLink');
       if (lo) lo.onclick = (e) => { e.preventDefault(); logout(); };
+      const cs = document.getElementById('curSwitch');
+      if (cs) cs.onchange = () => {
+        try { localStorage.setItem('sw_cur_override', cs.value); } catch {}
+        CUR_OVERRIDE = cs.value;
+        if (CUR_INFO[cs.value]) { CUR = { code: cs.value, rate: 1 }; refreshPrices(); detectCurrency(); }
+      };
     }
     const ff = document.getElementById('site-footer');
     if (ff) {
@@ -106,6 +115,73 @@
     if ((currency || '').toUpperCase() === 'PKR') return pkr(amount);
     return Number(amount).toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' ' + (currency || '');
   }
+
+  /* ---------- multi-currency (visitor's local currency) ---------- */
+  const CUR_INFO = {
+    PKR: { s: 'Rs ' }, SAR: { s: 'SR ' }, AED: { s: 'AED ' }, QAR: { s: 'QAR ' },
+    KWD: { s: 'KWD ' }, BHD: { s: 'BHD ' }, OMR: { s: 'OMR ' }, USD: { s: '$' },
+    GBP: { s: '£' }, EUR: { s: '€' }, INR: { s: '₹' }, BDT: { s: '৳ ' },
+    CAD: { s: 'CA$' }, AUD: { s: 'A$' }, MYR: { s: 'RM ' }, TRY: { s: '₺' },
+  };
+  const COUNTRY_CUR = { PK: 'PKR', SA: 'SAR', AE: 'AED', QA: 'QAR', KW: 'KWD', BH: 'BHD', OM: 'OMR',
+    US: 'USD', GB: 'GBP', CA: 'CAD', AU: 'AUD', IN: 'INR', BD: 'BDT', MY: 'MYR', TR: 'TRY' };
+  const EU_COUNTRIES = ['AT', 'BE', 'CY', 'DE', 'EE', 'ES', 'FI', 'FR', 'GR', 'HR', 'IE', 'IT', 'LT', 'LU', 'LV', 'MT', 'NL', 'PT', 'SI', 'SK'];
+  function curCache() { try { return JSON.parse(localStorage.getItem('sw_cur')) || null; } catch { return null; } }
+  let CUR = curCache() || { code: 'PKR', rate: 1 };
+  if (!CUR_INFO[CUR.code]) CUR = { code: 'PKR', rate: 1 };
+  let CUR_OVERRIDE = null;
+  try { CUR_OVERRIDE = localStorage.getItem('sw_cur_override'); } catch {}
+  if (CUR_OVERRIDE && CUR_INFO[CUR_OVERRIDE]) CUR = { code: CUR_OVERRIDE, rate: CUR.rate || 1 };
+
+  function fmtCur(pkrAmount) {
+    if (pkrAmount == null) return '—';
+    const info = CUR_INFO[CUR.code] || CUR_INFO.PKR;
+    const v = Math.round(Number(pkrAmount) * (CUR.rate || 1));
+    return info.s + v.toLocaleString('en-US');
+  }
+  // Display wrapper: converts PKR -> visitor currency; auto-updates on currency change
+  function moneyLocal(pkrAmount) {
+    if (pkrAmount == null) return '—';
+    return '<span class="sw-price" data-pkr="' + Number(pkrAmount) + '">' + esc(fmtCur(pkrAmount)) + '</span>';
+  }
+  function refreshPrices() {
+    document.querySelectorAll('.sw-price').forEach(el => {
+      const v = parseFloat(el.dataset.pkr);
+      if (!isNaN(v)) el.textContent = fmtCur(v);
+    });
+    const sel = document.getElementById('curSwitch');
+    if (sel && sel.value !== CUR.code) sel.value = CUR.code;
+  }
+  async function detectCurrency() {
+    try {
+      if (!(CUR_OVERRIDE && CUR_INFO[CUR_OVERRIDE])) {
+        let cc = null;
+        try { const g = await (await fetch('https://ipapi.co/json/')).json(); cc = g && g.country_code; } catch {}
+        if (!cc) { try { const g2 = await (await fetch('https://ipwho.is/')).json(); cc = g2 && g2.country_code; } catch {} }
+        if (cc) {
+          cc = String(cc).toUpperCase();
+          const code = COUNTRY_CUR[cc] || (EU_COUNTRIES.includes(cc) ? 'EUR' : null);
+          if (code && code !== CUR.code) CUR = { code, rate: 1 };
+        }
+      }
+      let rates = null;
+      const cached = curCache();
+      if (cached && cached.rates && Date.now() - (cached.ts || 0) < 24 * 3600 * 1000) rates = cached.rates;
+      else {
+        try {
+          const r = await (await fetch('https://open.er-api.com/v6/latest/PKR')).json();
+          if (r && r.result !== 'error' && r.rates) rates = r.rates;
+        } catch {}
+      }
+      if (rates && rates[CUR.code]) {
+        CUR.rate = rates[CUR.code];
+        try { localStorage.setItem('sw_cur', JSON.stringify({ code: CUR.code, rate: CUR.rate, rates, ts: Date.now() })); } catch {}
+      } else if (CUR.code !== 'PKR') {
+        try { localStorage.setItem('sw_cur', JSON.stringify({ code: CUR.code, rate: 1, rates: rates || (cached && cached.rates) || null, ts: Date.now() })); } catch {}
+      }
+      refreshPrices();
+    } catch {}
+  }
   function fmtDate(s) {
     if (!s) return '—';
     const d = new Date(s.length <= 10 ? s + 'T00:00:00' : s);
@@ -149,6 +225,8 @@
 
   window.SW = {
     renderChrome, getToken, getUser, setSession, logout, requireLogin,
-    api, pkr, money, fmtDate, fmtTime, dur, esc, statusBadge, toast, spinner, gradient, ICONS: I,
+    api, pkr, money, moneyLocal, fmtCur, refreshPrices, getCurrency: () => CUR.code,
+    fmtDate, fmtTime, dur, esc, statusBadge, toast, spinner, gradient, ICONS: I,
   };
+  detectCurrency();
 })();

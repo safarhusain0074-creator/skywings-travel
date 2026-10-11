@@ -174,7 +174,7 @@ function packageCard(p, i) {
     '<span class="badge badge-' + p.type + '">' + p.type.toUpperCase() + '</span></div>' +
     '<div class="card-body"><h3>' + SW.esc(p.title) + '</h3>' +
     '<div class="card-meta"><span>' + SW.ICONS.clock + ' ' + SW.esc(p.duration || '') + '</span><span>' + SW.ICONS.pin + ' ' + SW.esc(p.location || '') + '</span></div>' +
-    '<div class="card-foot"><span class="price">' + SW.pkr(p.price_pkr) + ' <small>/ person</small></span>' +
+    '<div class="card-foot"><span class="price">' + SW.moneyLocal(p.price_pkr) + ' <small>/ person</small></span>' +
     '<a class="btn btn-primary btn-sm" href="tour-detail.html?id=' + p.id + '">Details</a></div></div></div>';
 }
 </script>
