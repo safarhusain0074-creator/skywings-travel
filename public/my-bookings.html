@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Bookings</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+<script src="assets/js/site-config.js"></script>
+<script src="assets/js/app.js"></script>
+</head>
+<body>
+<div id="site-header"></div>
+
+<div class="container" style="margin:30px auto 60px">
+  <h1 style="margin-bottom:18px">My Bookings</h1>
+  <div id="list"></div>
+</div>
+
+<div id="site-footer"></div>
+
+<script>
+if (!SW.requireLogin()) throw new Error('redirect');
+SW.renderChrome('my-bookings.html');
+
+(async () => {
+  const box = document.getElementById('list');
+  SW.spinner(box);
+  try {
+    const { bookings } = await SW.api('/api/bookings/mine');
+    if (!bookings.length) { box.innerHTML = '<div class="empty">No bookings yet. <a href="flights.html">Search flights</a> or <a href="tours.html">browse tours</a> to get started.</div>'; return; }
+    box.innerHTML = bookings.map(b => {
+      let action = '';
+      if (b.status === 'pending_payment') action = '<a class="btn btn-primary btn-sm" href="payment.html?ref=' + b.ref + '">Pay Now</a>';
+      if (b.status === 'ticketed' || b.status === 'completed') action = '<button class="btn btn-outline btn-sm" data-ticket="' + b.id + '">View Ticket</button>';
+      return '<div class="flight-card"><div>' +
+        '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b style="font-size:1.05rem">' + SW.esc(b.title) + '</b>' + SW.statusBadge(b.status) + '</div>' +
+        '<div style="font-size:.88rem;color:var(--muted);margin-top:6px">Ref: <b>' + SW.esc(b.ref) + '</b> · ' + SW.esc(b.type.toUpperCase()) +
+        (b.travel_date ? ' · Travel: ' + SW.fmtDate(b.travel_date) : '') +
+        (b.pnr ? ' · PNR: <b>' + SW.esc(b.pnr) + '</b>' : '') + '</div>' +
+        (b.rejection_reason ? '<div class="alert alert-error" style="margin:10px 0 0"><b>Payment rejected:</b> ' + SW.esc(b.rejection_reason) + '</div>' : '') +
+        (b.ticket_details ? '<div class="alert alert-success" style="margin:10px 0 0">' + SW.esc(b.ticket_details) + '</div>' : '') +
+        '</div><div class="flight-price"><div class="amount">' + (b.amount_pkr ? SW.pkr(b.amount_pkr) : '—') + '</div>' + action + '</div></div>';
+    }).join('');
+    box.querySelectorAll('[data-ticket]').forEach(btn => btn.onclick = async () => {
+      const { booking } = await SW.api('/api/bookings/' + btn.dataset.ticket);
+      const w = window.open('', '_blank');
+      w.document.write('<html><head><title>E-Ticket ' + SW.esc(booking.ref) + '</title><style>body{font-family:sans-serif;padding:40px;max-width:700px;margin:auto}h1{color:#0b2c4d}.pnr{font-size:2rem;letter-spacing:4px;color:#d97706}.row{display:flex;justify-content:space-between;border-bottom:1px solid #ddd;padding:10px 0}</style></head><body>' +
+        '<h1>' + SW.esc(window.SITE_CONFIG.brandName) + ' — E-Ticket</h1>' +
+        '<p>Booking Ref: <b>' + SW.esc(booking.ref) + '</b></p><p class="pnr">PNR: ' + SW.esc(booking.pnr || '—') + '</p>' +
+        '<div class="row"><span>Service</span><b>' + SW.esc(booking.title) + '</b></div>' +
+        '<div class="row"><span>Travel date</span><b>' + SW.fmtDate(booking.travel_date) + '</b></div>' +
+        '<div class="row"><span>Travelers</span><b>' + (booking.travelers || '—') + '</b></div>' +
+        (booking.ticket_details ? '<div class="row"><span>Details</span><b>' + SW.esc(booking.ticket_details) + '</b></div>' : '') +
+        '<p style="margin-top:20px;color:#666">Please arrive at the airport 3 hours before international and 2 hours before domestic flights. Carry your original CNIC / passport.</p>' +
+        '<button onclick="window.print()" style="padding:10px 24px;font-size:1rem;cursor:pointer">Print</button></body></html>');
+    });
+  } catch (err) { box.innerHTML = '<div class="alert alert-error">' + SW.esc(err.message) + '</div>'; }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact Us</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+<script src="assets/js/site-config.js"></script>
+<script src="assets/js/app.js"></script>
+</head>
+<body>
+<div id="site-header"></div>
+
+<section class="hero" style="padding:44px 0">
+  <div class="container"><h1>Contact Us</h1><p>Questions about a booking, package or visa? Reach out — we reply fast.</p></div>
+</section>
+
+<div class="container" style="margin:30px auto 60px">
+  <div class="grid-3">
+    <div class="card"><div class="card-body" style="text-align:center"><span style="color:var(--teal)" data-icon="chat"></span><h3>Phone</h3><p><a id="cPhone" href="#">—</a></p><p class="form-hint" id="cHours"></p></div></div>
+    <div class="card"><div class="card-body" style="text-align:center"><span style="color:#25d366" data-icon="wa"></span><h3>WhatsApp</h3><p><a id="cWa" href="#" target="_blank">Chat now</a></p><p class="form-hint">Fastest response</p></div></div>
+    <div class="card"><div class="card-body" style="text-align:center"><span style="color:var(--sky)" data-icon="doc"></span><h3>Email</h3><p><a id="cEmail" href="#">—</a></p><p class="form-hint" id="cAddr"></p></div></div>
+  </div>
+</div>
+
+<div id="site-footer"></div>
+
+<script>
+SW.renderChrome('contact.html');
+const C = window.SITE_CONFIG;
+document.getElementById('cPhone').textContent = C.phone;
+document.getElementById('cPhone').href = 'tel:' + C.phone.replace(/\s/g, '');
+document.getElementById('cHours').textContent = C.hours;
+document.getElementById('cWa').href = 'https://wa.me/' + C.whatsapp;
+document.getElementById('cEmail').textContent = C.email;
+document.getElementById('cEmail').href = 'mailto:' + C.email;
+document.getElementById('cAddr').textContent = C.address;
+document.querySelectorAll('[data-icon]').forEach(el => {
+  const svg = SW.ICONS[el.dataset.icon];
+  if (svg) { el.insertAdjacentHTML('afterbegin', svg); const s = el.querySelector('svg'); s.style.width = '36px'; s.style.height = '36px'; }
+});
+</script>
+</body>
+</html>

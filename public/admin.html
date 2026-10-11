@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+<script src="assets/js/site-config.js"></script>
+<script src="assets/js/app.js"></script>
+</head>
+<body>
+<div id="site-header"></div>
+
+<div class="container" style="margin:26px auto 60px">
+  <h1 style="margin-bottom:18px">Admin Panel</h1>
+  <div class="admin-layout">
+    <div class="admin-side" id="adminTabs">
+      <button data-tab="overview" class="active">Overview</button>
+      <button data-tab="bookings">Bookings</button>
+      <button data-tab="packages">Packages</button>
+      <button data-tab="paymethods">Payment Methods</button>
+      <button data-tab="visas">Visa Requests</button>
+      <button data-tab="users">Users</button>
+    </div>
+    <div class="admin-main" id="adminMain"></div>
+  </div>
+</div>
+
+<div class="modal-back" id="modalBack"><div class="modal" id="modalBox"></div></div>
+
+<div id="site-footer"></div>
+
+<script>
+if (!SW.requireLogin()) throw new Error('redirect');
+const me = SW.getUser();
+if (!me.is_admin) { location.href = 'my-bookings.html'; throw new Error('not admin'); }
+SW.renderChrome('admin.html');
+
+const main = document.getElementById('adminMain');
+const modalBack = document.getElementById('modalBack');
+const modalBox = document.getElementById('modalBox');
+function openModal(html) { modalBox.innerHTML = html; modalBack.classList.add('open'); }
+function closeModal() { modalBack.classList.remove('open'); }
+modalBack.addEventListener('click', e => { if (e.target === modalBack) closeModal(); });
+
+document.querySelectorAll('#adminTabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#adminTabs button').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  ({ overview: showOverview, bookings: showBookings, packages: showPackages, paymethods: showPayMethods, visas: showVisas, users: showUsers })[b.dataset.tab]();
+});
+
+/* ---------- Overview ---------- */
+async function showOverview() {
+  SW.spinner(main);
+  try {
+    const s = await SW.api('/api/admin/stats');
+    const cards = [
+      ['Payment Pending', s.bookings.pending_payment, 'st-pending_payment'],
+      ['Payment Submitted', s.bookings.payment_submitted, 'st-payment_submitted'],
+      ['Confirmed', s.bookings.confirmed, 'st-confirmed'],
+      ['Ticketed', s.bookings.ticketed, 'st-ticketed'],
+      ['Completed', s.bookings.completed, 'st-completed'],
+      ['Cancelled', s.bookings.cancelled, 'st-cancelled'],
+      ['Total Users', s.users, ''],
+      ['New Visa Requests', s.new_visa_requests, 'st-new'],
+    ];
+    main.innerHTML = '<div class="stat-grid">' + cards.map(c =>
+      '<div class="stat"><div class="n">' + c[1] + '</div><div class="l">' + c[0] + '</div></div>').join('') + '</div>' +
+      '<div class="alert alert-warn"><b>Daily checklist:</b> review <b>Payment Submitted</b> bookings, verify the transaction reference against your bank/JazzCash/Easypaisa statement, then Confirm Payment and Issue Ticket.</div>';
+  } catch (e) { main.innerHTML = '<div class="alert alert-error">' + SW.esc(e.message) + '</div>'; }
+}
+
+/* ---------- Bookings ---------- */
+let bookingFilter = '';
+async function showBookings() {
+  SW.spinner(main);
+  try {
+    const { bookings } = await SW.api('/api/admin/bookings' + (bookingFilter ? '?status=' + bookingFilter : ''));
+    const opts = [''].concat(['pending_payment','payment_submitted','confirmed','ticketed','completed','cancelled']);
+    main.innerHTML =
+      '<div class="toolbar"><select id="statusFilter" style="max-width:260px">' +
+      opts.map(o => '<option value="' + o + '"' + (o === bookingFilter ? ' selected' : '') + '>' + (o ? o.replace(/_/g, ' ') : 'All statuses') + '</option>').join('') +
+      '</select><span style="color:var(--muted);font-size:.9rem">' + bookings.length + ' bookings</span></div>' +
+      '<div class="table-wrap"><table><thead><tr><th>Ref</th><th>Customer</th><th>Service</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead><tbody>' +
+      bookings.map(b =>
+        '<tr><td><b>' + SW.esc(b.ref) + '</b><br><span style="font-size:.78rem;color:var(--muted)">' + SW.fmtDate(b.created_at) + '</span></td>' +
+        '<td>' + SW.esc(b.user_name) + '<br><span style="font-size:.78rem;color:var(--muted)">' + SW.esc(b.user_email) + '</span></td>' +
+        '<td>' + SW.esc(b.type.toUpperCase()) + '<br><span style="font-size:.78rem;color:var(--muted)">' + SW.esc(b.title.slice(0, 40)) + '</span></td>' +
+        '<td>' + (b.amount_pkr ? SW.pkr(b.amount_pkr) : '—') + '</td>' +
+        '<td>' + SW.statusBadge(b.status) + '</td>' +
+        '<td><button class="btn btn-ghost btn-sm" data-view="' + b.id + '">View</button></td></tr>'
+      ).join('') + '</tbody></table></div>';
+    document.getElementById('statusFilter').onchange = e => { bookingFilter = e.target.value; showBookings(); };
+    main.querySelectorAll('[data-view]').forEach(btn => btn.onclick = () => viewBooking(btn.dataset.view));
+  } catch (e) { main.innerHTML = '<div class="alert alert-error">' + SW.esc(e.message) + '</div>'; }
+}
+
+async function viewBooking(id) {
+  const { booking: b } = await SW.api('/api/admin/bookings/' + id);
+  const pax = (b.passengers || []).map((p, i) =>
+    '<div style="font-size:.88rem;padding:6px 0;border-bottom:1px dashed var(--line)"><b>' + (i + 1) + '.</b> ' +
+    SW.esc((p.title || '') + ' ' + (p.given_name || '') + ' ' + (p.family_name || '')) +
+    (p.born_on ? ' · DOB ' + SW.esc(p.born_on) : '') + (p.passport_number ? ' · PP ' + SW.esc(p.passport_number) : '') + '</div>').join('');
+  let actions = '';
+  if (b.status === 'payment_submitted') {
+    actions = '<button class="btn btn-primary btn-sm" id="mConfirm">Confirm Payment</button> ' +
+      '<button class="btn btn-danger btn-sm" id="mReject">Reject</button>';
+  } else if (b.status === 'confirmed') {
+    actions = '<button class="btn btn-primary btn-sm" id="mTicket">Issue Ticket</button>';
+  } else if (b.status === 'ticketed') {
+    actions = '<button class="btn btn-ghost btn-sm" id="mComplete">Mark Completed</button>';
+  }
+  if (!['cancelled', 'completed'].includes(b.status)) actions += ' <button class="btn btn-ghost btn-sm" id="mCancel">Cancel Booking</button>';
+
+  openModal('<h3>Booking ' + SW.esc(b.ref) + ' ' + SW.statusBadge(b.status) + '</h3>' +
+    '<div style="font-size:.92rem">' +
+    '<p><b>Service:</b> ' + SW.esc(b.title) + ' (' + SW.esc(b.type) + ')</p>' +
+    '<p><b>Amount:</b> ' + (b.amount_pkr ? SW.pkr(b.amount_pkr) : '—') + (b.travel_date ? ' · <b>Travel:</b> ' + SW.fmtDate(b.travel_date) : '') + '</p>' +
+    (b.contact && (b.contact.email || b.contact.phone) ? '<p><b>Contact:</b> ' + SW.esc(b.contact.email || '') + ' ' + SW.esc(b.contact.phone || '') + '</p>' : '') +
+    (pax ? '<h4 style="margin:10px 0 6px">Travelers</h4>' + pax : '') +
+    (b.payment_method ? '<p><b>Paid via:</b> ' + SW.esc(b.payment_method) + ' · Ref: <b>' + SW.esc(b.payment_reference || '') + '</b></p>' : '') +
+    (b.proof_path ? '<p><b>Proof:</b> <a href="' + b.proof_path + '" target="_blank">View screenshot</a></p><a href="' + b.proof_path + '" target="_blank"><img src="' + b.proof_path + '" style="max-width:100%;border-radius:10px;border:1px solid var(--line)"></a>' : '') +
+    (b.rejection_reason ? '<div class="alert alert-error"><b>Rejection reason:</b> ' + SW.esc(b.rejection_reason) + '</div>' : '') +
+    (b.pnr ? '<p><b>PNR:</b> ' + SW.esc(b.pnr) + '</p>' : '') +
+    (b.ticket_details ? '<p><b>Ticket:</b> ' + SW.esc(b.ticket_details) + '</p>' : '') +
+    '</div><div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">' + actions +
+    ' <button class="btn btn-ghost btn-sm" onclick="document.getElementById(\'modalBack\').classList.remove(\'open\')">Close</button></div>');
+
+  const done = async (fn) => { try { await fn(); closeModal(); SW.toast('Done'); showBookings(); } catch (e) { SW.toast(e.message); } };
+  const c1 = document.getElementById('mConfirm');
+  if (c1) c1.onclick = () => done(() => SW.api('/api/admin/bookings/' + id + '/confirm-payment', { method: 'PATCH' }));
+  const rj = document.getElementById('mReject');
+  if (rj) rj.onclick = () => {
+    const reason = prompt('Rejection reason (customer will see this):');
+    if (reason) done(() => SW.api('/api/admin/bookings/' + id + '/reject-payment', { method: 'PATCH', body: { reason } }));
+  };
+  const tk = document.getElementById('mTicket');
+  if (tk) tk.onclick = () => {
+    const pnr = prompt('Enter PNR / ticket reference:');
+    if (!pnr) return;
+    const details = prompt('Ticket details (optional — airline, flight no., notes):') || '';
+    done(() => SW.api('/api/admin/bookings/' + id + '/issue-ticket', { method: 'POST', body: { pnr, ticket_details: details } }));
+  };
+  const cp = document.getElementById('mComplete');
+  if (cp) cp.onclick = () => done(() => SW.api('/api/admin/bookings/' + id + '/complete', { method: 'PATCH' }));
+  const cx = document.getElementById('mCancel');
+  if (cx) cx.onclick = () => { if (confirm('Cancel this booking?')) done(() => SW.api('/api/admin/bookings/' + id + '/cancel', { method: 'PATCH' })); };
+}
+
+/* ---------- Packages ---------- */
+async function showPackages() {
+  SW.spinner(main);
+  const { packages } = await SW.api('/api/admin/packages');
+  main.innerHTML =
+    '<div class="toolbar"><button class="btn btn-primary" id="addPkg">+ Add Package / Hotel</button></div>' +
+    '<div class="table-wrap"><table><thead><tr><th>Title</th><th>Type</th><th>Price</th><th>Duration</th><th>Active</th><th></th></tr></thead><tbody>' +
+    packages.map(p => '<tr><td><b>' + SW.esc(p.title) + '</b></td><td>' + p.type + '</td><td>' + SW.pkr(p.price_pkr) + '</td><td>' + SW.esc(p.duration || '—') + '</td><td>' + (p.active ? 'Yes' : 'No') + '</td>' +
+      '<td><button class="btn btn-ghost btn-sm" data-edit="' + p.id + '">Edit</button> <button class="btn btn-danger btn-sm" data-del="' + p.id + '">Delete</button></td></tr>').join('') +
+    '</tbody></table></div>';
+  document.getElementById('addPkg').onclick = () => pkgForm(null);
+  main.querySelectorAll('[data-edit]').forEach(b => b.onclick = async () => {
+    const { packages: all } = await SW.api('/api/admin/packages');
+    pkgForm(all.find(x => x.id == b.dataset.edit));
+  });
+  main.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    if (!confirm('Delete this package?')) return;
+    await SW.api('/api/admin/packages/' + b.dataset.del, { method: 'DELETE' });
+    SW.toast('Deleted'); showPackages();
+  });
+}
+
+function pkgForm(p) {
+  openModal('<h3>' + (p ? 'Edit Package' : 'Add Package / Hotel') + '</h3><form id="pkgForm">' +
+    '<div class="form-row"><div class="form-group"><label>Type *</label><select name="type">' +
+    ['tour', 'hotel', 'umrah'].map(t => '<option value="' + t + '"' + (p && p.type === t ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></div>' +
+    '<div class="form-group"><label>Active</label><select name="active"><option value="1"' + (!p || p.active ? ' selected' : '') + '>Yes</option><option value="0"' + (p && !p.active ? ' selected' : '') + '>No</option></select></div></div>' +
+    '<div class="form-group"><label>Title *</label><input name="title" required value="' + SW.esc(p ? p.title : '') + '"></div>' +
+    '<div class="form-row"><div class="form-group"><label>Price (PKR) *</label><input type="number" name="price_pkr" min="0" required value="' + (p ? p.price_pkr : '') + '"></div>' +
+    '<div class="form-group"><label>Duration</label><input name="duration" placeholder="5 Days / 4 Nights" value="' + SW.esc(p ? p.duration : '') + '"></div></div>' +
+    '<div class="form-group"><label>Location</label><input name="location" value="' + SW.esc(p ? p.location : '') + '"></div>' +
+    '<div class="form-group"><label>Description *</label><textarea name="description" rows="3" required>' + SW.esc(p ? p.description : '') + '</textarea></div>' +
+    '<div class="form-group"><label>Itinerary (optional)</label><textarea name="itinerary" rows="4">' + SW.esc(p ? p.itinerary : '') + '</textarea></div>' +
+    '<button class="btn btn-primary btn-block" type="submit">Save</button></form>');
+  document.getElementById('pkgForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const f = Object.fromEntries(new FormData(e.target));
+    f.price_pkr = parseFloat(f.price_pkr); f.active = f.active === '1';
+    try {
+      if (p) await SW.api('/api/admin/packages/' + p.id, { method: 'PUT', body: f });
+      else await SW.api('/api/admin/packages', { method: 'POST', body: f });
+      closeModal(); SW.toast('Saved'); showPackages();
+    } catch (err) { SW.toast(err.message); }
+  });
+}
+
+/* ---------- Payment methods ---------- */
+async function showPayMethods() {
+  SW.spinner(main);
+  const { methods } = await SW.api('/api/admin/payment-methods');
+  main.innerHTML =
+    '<div class="alert alert-warn"><b>Important:</b> the seeded methods contain <b>PLACEHOLDER</b> account details. Replace them with your real bank / JazzCash / Easypaisa accounts before going live.</div>' +
+    '<div class="toolbar"><button class="btn btn-primary" id="addPm">+ Add Method</button></div>' +
+    '<div class="table-wrap"><table><thead><tr><th>Name</th><th>Account</th><th>Active</th><th></th></tr></thead><tbody>' +
+    methods.map(m => '<tr><td><b>' + SW.esc(m.name) + '</b><br><span style="font-size:.78rem;color:var(--muted)">' + SW.esc(m.method_type) + '</span></td>' +
+      '<td>' + SW.esc(m.account_title || '') + '<br><span style="font-size:.85rem">' + SW.esc(m.account_number || '') + '</span>' + (m.iban ? '<br><span style="font-size:.78rem;color:var(--muted)">IBAN: ' + SW.esc(m.iban) + '</span>' : '') + '</td>' +
+      '<td>' + (m.active ? 'Yes' : 'No') + '</td>' +
+      '<td><button class="btn btn-ghost btn-sm" data-edit="' + m.id + '">Edit</button> <button class="btn btn-danger btn-sm" data-del="' + m.id + '">Delete</button></td></tr>').join('') +
+    '</tbody></table></div>';
+  document.getElementById('addPm').onclick = () => pmForm(null);
+  main.querySelectorAll('[data-edit]').forEach(b => b.onclick = async () => {
+    const { methods: all } = await SW.api('/api/admin/payment-methods');
+    pmForm(all.find(x => x.id == b.dataset.edit));
+  });
+  main.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    if (!confirm('Delete this payment method?')) return;
+    await SW.api('/api/admin/payment-methods/' + b.dataset.del, { method: 'DELETE' });
+    SW.toast('Deleted'); showPayMethods();
+  });
+}
+
+function pmForm(m) {
+  openModal('<h3>' + (m ? 'Edit Payment Method' : 'Add Payment Method') + '</h3><form id="pmForm">' +
+    '<div class="form-row"><div class="form-group"><label>Name *</label><input name="name" required value="' + SW.esc(m ? m.name : '') + '" placeholder="e.g. Bank Transfer — Meezan"></div>' +
+    '<div class="form-group"><label>Type</label><select name="method_type">' +
+    ['bank', 'jazzcash', 'easypaisa', 'other'].map(t => '<option' + (m && m.method_type === t ? ' selected' : '') + '>' + t + '</option>').join('') + '</select></div></div>' +
+    '<div class="form-row"><div class="form-group"><label>Account title</label><input name="account_title" value="' + SW.esc(m ? m.account_title : '') + '"></div>' +
+    '<div class="form-group"><label>Account number</label><input name="account_number" value="' + SW.esc(m ? m.account_number : '') + '"></div></div>' +
+    '<div class="form-group"><label>IBAN (for banks)</label><input name="iban" value="' + SW.esc(m ? m.iban : '') + '"></div>' +
+    '<div class="form-group"><label>Instructions for customer</label><textarea name="instructions" rows="2">' + SW.esc(m ? m.instructions : '') + '</textarea></div>' +
+    '<div class="form-row"><div class="form-group"><label>Sort order</label><input type="number" name="sort_order" value="' + (m ? m.sort_order : 0) + '"></div>' +
+    '<div class="form-group"><label>Active</label><select name="active"><option value="1"' + (!m || m.active ? ' selected' : '') + '>Yes</option><option value="0"' + (m && !m.active ? ' selected' : '') + '>No</option></select></div></div>' +
+    '<button class="btn btn-primary btn-block" type="submit">Save</button></form>');
+  document.getElementById('pmForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const f = Object.fromEntries(new FormData(e.target));
+    f.active = f.active === '1'; f.sort_order = parseInt(f.sort_order) || 0;
+    try {
+      if (m) await SW.api('/api/admin/payment-methods/' + m.id, { method: 'PUT', body: f });
+      else await SW.api('/api/admin/payment-methods', { method: 'POST', body: f });
+      closeModal(); SW.toast('Saved'); showPayMethods();
+    } catch (err) { SW.toast(err.message); }
+  });
+}
+
+/* ---------- Visa requests ---------- */
+async function showVisas() {
+  SW.spinner(main);
+  const { requests } = await SW.api('/api/admin/visa-requests');
+  main.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Name</th><th>Country</th><th>Contact</th><th>Status</th><th></th></tr></thead><tbody>' +
+    requests.map(r => '<tr><td>' + SW.fmtDate(r.created_at) + '</td><td><b>' + SW.esc(r.name) + '</b></td><td>' + SW.esc(r.country) + '</td>' +
+      '<td style="font-size:.82rem">' + SW.esc(r.phone) + '<br>' + SW.esc(r.email) + '</td>' +
+      '<td>' + SW.statusBadge(r.status === 'new' ? 'new' : 'completed') + ' ' + SW.esc(r.status) + '</td>' +
+      '<td><select data-visa="' + r.id + '">' + ['new', 'contacted', 'processing', 'approved', 'rejected'].map(s =>
+        '<option value="' + s + '"' + (r.status === s ? ' selected' : '') + '>' + s + '</option>').join('') + '</select></td></tr>').join('') +
+    '</tbody></table></div>';
+  main.querySelectorAll('[data-visa]').forEach(sel => sel.onchange = async () => {
+    await SW.api('/api/admin/visa-requests/' + sel.dataset.visa, { method: 'PATCH', body: { status: sel.value } });
+    SW.toast('Updated');
+  });
+}
+
+/* ---------- Users ---------- */
+async function showUsers() {
+  SW.spinner(main);
+  const { users } = await SW.api('/api/admin/users');
+  main.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Admin</th><th>Joined</th></tr></thead><tbody>' +
+    users.map(u => '<tr><td><b>' + SW.esc(u.name) + '</b></td><td>' + SW.esc(u.email) + '</td><td>' + SW.esc(u.phone || '—') + '</td>' +
+      '<td>' + (u.is_admin ? 'Yes' : 'No') + '</td><td>' + SW.fmtDate(u.created_at) + '</td></tr>').join('') +
+    '</tbody></table></div>';
+}
+
+showOverview();
+</script>
+</body>
+</html>
